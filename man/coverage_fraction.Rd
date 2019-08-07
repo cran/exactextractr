@@ -31,3 +31,9 @@ a list with a \code{RasterLayer} for each feature in \code{y}.
 \description{
 Compute the fraction of raster cells covered by a polygon
 }
+\examples{
+rast <- raster::raster(matrix(1:100, ncol=10), xmn=0, ymn=0, xmx=10, ymx=10)
+poly <- sf::st_as_sfc('POLYGON ((2 2, 7 6, 4 9, 2 2))')
+
+cov_frac <- coverage_fraction(rast, poly)[[1]]
+}
