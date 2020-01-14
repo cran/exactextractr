@@ -1,8 +1,10 @@
 # exactextractr
 
-[![Build Status](https://gitlab.com/isciences/exactextractr/badges/master/build.svg)](https://gitlab.com/isciences/exactextractr/pipelines)
+[![Build Status](https://gitlab.com/isciences/exactextractr/badges/master/pipeline.svg)](https://gitlab.com/isciences/exactextractr/pipelines)
 [![Build Status](https://ci.appveyor.com/api/projects/status/aixqdcq7e065eb2h/branch/master?svg=true)](https://ci.appveyor.com/project/dbaston1/exactextractr/branch/master)
 [![coverage report](https://gitlab.com/isciences/exactextractr/badges/master/coverage.svg)](https://isciences.gitlab.io/exactextractr/coverage.html)
+[![CRAN](http://www.r-pkg.org/badges/version/exactextractr)](https://cran.r-project.org/package=exactextractr)
+[![cran checks](https://cranchecks.info/badges/worst/exactextractr)](https://cran.r-project.org/web/checks/check_results_exactextractr.html)
 
 `exactextractr` is an R package that quickly and accurately summarizes raster
 values over polygonal areas, commonly referred to as _zonal statistics_. Unlike
@@ -192,10 +194,9 @@ municipalities and reaches a maximum of 9%.
 ### Dependencies
 
 Installation requires version 3.5 or greater of the
-[GEOS](https://geos.osgeo.org/) geometry processing library. For best
-performance, it is recommended to use version 3.7, which introduced some
-optimizations important to `exactextractr`. On Windows, GEOS will be downloaded
-automatically as part of package install. On MacOS, it can be installed using
-Homebrew (`brew install geos`). On Linux, it can be installed from system
-package repositories (`apt-get install libgeos-dev` on Debian/Ubuntu, or `yum
-install libgeos-devel` on CentOS/RedHat.)
+[GEOS](https://geos.osgeo.org/) geometry processing library.  It is recommended
+to use the most recent released version (3.8) for best performance. On Windows,
+GEOS will be downloaded automatically as part of package install. On MacOS, it
+can be installed using Homebrew (`brew install geos`). On Linux, it can be
+installed from system package repositories (`apt-get install libgeos-dev` on
+Debian/Ubuntu, or `yum install libgeos-devel` on CentOS/RedHat.)
