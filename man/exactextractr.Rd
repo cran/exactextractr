@@ -3,7 +3,6 @@
 \docType{package}
 \name{exactextractr}
 \alias{exactextractr}
-\alias{exactextractr-package}
 \title{exactextractr}
 \description{
 exactextractr quickly and accurately summarizes raster values over polygonal
