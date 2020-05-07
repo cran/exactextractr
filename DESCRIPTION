@@ -1,6 +1,6 @@
 Package: exactextractr
 Title: Fast Extraction from Raster Datasets using Polygons
-Version: 0.2.1
+Version: 0.3.0
 Authors@R: c(
         person("Daniel Baston", email = "dbaston@isciences.com", role = c("aut", "cre")),
         person("ISciences, LLC", role="cph"))
@@ -17,11 +17,11 @@ LinkingTo: Rcpp
 Suggests: testthat
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 NeedsCompilation: yes
-Packaged: 2020-03-21 14:58:00 UTC; dan
+Packaged: 2020-05-07 00:22:29 UTC; dan
 Author: Daniel Baston [aut, cre],
   ISciences, LLC [cph]
 Maintainer: Daniel Baston <dbaston@isciences.com>
 Repository: CRAN
-Date/Publication: 2020-03-21 16:10:02 UTC
+Date/Publication: 2020-05-07 08:40:17 UTC

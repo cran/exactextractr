@@ -64,7 +64,7 @@ if (!isGeneric("exact_extract")) {
 #'                               and the value of a second weighting raster provided
 #'                               as \code{weights}}
 #'  \item{\code{weighted_sum} - the sum of defined raster cell values, multiplied by
-#'                              the fraction of each cell taht is covered by the polygon
+#'                              the fraction of each cell that is covered by the polygon
 #'                               and the value of a second weighting raster provided
 #'                               as \code{weights}}
 #' }
@@ -84,6 +84,8 @@ if (!isGeneric("exact_extract")) {
 #' @param     include_xy if \code{TRUE}, augment the returned data frame with
 #'                        columns for cell center coordinates (\code{x} and
 #'                        \code{y}) or pass them to \code{fun}
+#' @param     include_cell if \code{TRUE}, augment the returned data frame with
+#'                        column for cell index
 #' @param     fun an optional function or character vector, as described below
 #' @param     max_cells_in_memory the maximum number of raster cells to load at
 #'                                a given time when using a named summary operation
@@ -125,8 +127,8 @@ NULL
 #' @useDynLib exactextractr
 #' @rdname exact_extract
 #' @export
-setMethod('exact_extract', signature(x='Raster', y='sf'), function(x, y, fun=NULL, ..., include_xy=FALSE, progress=TRUE, max_cells_in_memory=30000000) {
-  exact_extract(x, sf::st_geometry(y), fun=fun, ..., include_xy=include_xy, progress=progress, max_cells_in_memory=max_cells_in_memory)
+setMethod('exact_extract', signature(x='Raster', y='sf'), function(x, y, fun=NULL, ..., include_xy=FALSE, progress=TRUE, max_cells_in_memory=30000000, include_cell=FALSE) {
+  exact_extract(x, sf::st_geometry(y), fun=fun, ..., include_xy=include_xy, progress=progress, max_cells_in_memory=max_cells_in_memory, include_cell=include_cell)
 })
 
 # Return the number of standard (non-...) arguments in a supplied function that
@@ -145,7 +147,14 @@ emptyVector <- function(rast) {
          numeric())
 }
 
-.exact_extract <- function(x, y, fun=NULL, ..., weights=NULL, include_xy=FALSE, progress=TRUE, max_cells_in_memory=30000000) {
+.exact_extract <- function(x, y, fun=NULL, ..., weights=NULL, include_xy=FALSE, progress=TRUE, max_cells_in_memory=30000000, include_cell=FALSE) {
+  if(inherits(y, 'sfc_GEOMETRY')) {
+    if (!all(sf::st_dimension(y) == 2)) {
+      stop("Features in sfc_GEOMETRY must be polygonal")
+    }
+    y <- sf::st_cast(y, 'MULTIPOLYGON')
+  }
+
   if(!is.null(weights)) {
     if (!startsWith(class(weights), 'Raster')) {
       stop("Weights must be a Raster object.")
@@ -208,7 +217,7 @@ emptyVector <- function(rast) {
     }
 
     if (is.character(fun)) {
-      results <- sapply(sf::st_as_binary(y), function(wkb) {
+      results <- sapply(sf::st_as_binary(y, EWKB=TRUE), function(wkb) {
         update_progress()
         CPP_stats(x, weights, wkb, fun, max_cells_in_memory)
       })
@@ -236,7 +245,7 @@ emptyVector <- function(rast) {
         appfn <- sapply
       }
 
-      appfn(sf::st_as_binary(y), function(wkb) {
+      appfn(sf::st_as_binary(y, EWKB=TRUE), function(wkb) {
         ret <- CPP_exact_extract(x, wkb)
 
         if (length(ret$weights) > 0) {
@@ -276,6 +285,18 @@ emptyVector <- function(rast) {
           }
         }
 
+        if (include_cell) {
+          if (nrow(vals) == 0) {
+            vals$cell <- numeric()
+          } else {
+            rows <- rep(ret$row:(ret$row+nrow(ret$weights) - 1), each=ncol(ret$weights))
+            cols <- rep.int(ret$col:(ret$col+ncol(ret$weights) - 1),
+                                     times = nrow(ret$weights))
+            vals$cell <- raster::cellFromRowCol(x,
+                                           row=rows,
+                                           col=cols)
+          }
+        }
         cov_fracs <- as.vector(t(ret$weights))
         vals <- vals[cov_fracs > 0, , drop=FALSE]
         cov_fracs <- cov_fracs[cov_fracs > 0]
@@ -311,3 +332,8 @@ setMethod('exact_extract', signature(x='Raster', y='sfc_MULTIPOLYGON'), .exact_e
 #' @rdname exact_extract
 #' @export
 setMethod('exact_extract', signature(x='Raster', y='sfc_POLYGON'), .exact_extract)
+
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='Raster', y='sfc_GEOMETRY'), .exact_extract)

@@ -83,15 +83,20 @@ public:
     Rcpp::Environment raster = Rcpp::Environment::namespace_env("raster");
     Rcpp::Function getValuesBlockFn = raster["getValuesBlock"];
 
-    auto cropped_grid = m_grid.shrink_to_fit(box);
-    Raster<double> vals(cropped_grid);
+    auto cropped_grid = m_grid.crop(box);
 
-    Rcpp::NumericMatrix rast_values = getValuesBlockFn(m_rast,
-                                                       1 + cropped_grid.row_offset(m_grid),
-                                                       cropped_grid.rows(),
-                                                       1 + cropped_grid.col_offset(m_grid),
-                                                       cropped_grid.cols(),
-                                                       "matrix");
+    Rcpp::NumericMatrix rast_values;
+
+    if (cropped_grid.empty()) {
+      rast_values = Rcpp::no_init(0, 0);
+    } else {
+      rast_values = getValuesBlockFn(m_rast,
+                                     1 + cropped_grid.row_offset(m_grid),
+                                     cropped_grid.rows(),
+                                     1 + cropped_grid.col_offset(m_grid),
+                                     cropped_grid.cols(),
+                                     "matrix");
+    }
 
     return std::make_unique<NumericMatrixRaster>(rast_values, cropped_grid);
   }

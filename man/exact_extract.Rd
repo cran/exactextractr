@@ -5,6 +5,7 @@
 \alias{exact_extract,Raster,sf-method}
 \alias{exact_extract,Raster,sfc_MULTIPOLYGON-method}
 \alias{exact_extract,Raster,sfc_POLYGON-method}
+\alias{exact_extract,Raster,sfc_GEOMETRY-method}
 \title{Extract or summarize values from Raster* objects}
 \usage{
 \S4method{exact_extract}{Raster,sf}(
@@ -14,7 +15,8 @@
   ...,
   include_xy = FALSE,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  include_cell = FALSE
 )
 
 \S4method{exact_extract}{Raster,sfc_MULTIPOLYGON}(
@@ -25,7 +27,8 @@
   weights = NULL,
   include_xy = FALSE,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  include_cell = FALSE
 )
 
 \S4method{exact_extract}{Raster,sfc_POLYGON}(
@@ -36,7 +39,20 @@
   weights = NULL,
   include_xy = FALSE,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  include_cell = FALSE
+)
+
+\S4method{exact_extract}{Raster,sfc_GEOMETRY}(
+  x,
+  y,
+  fun = NULL,
+  ...,
+  weights = NULL,
+  include_xy = FALSE,
+  progress = TRUE,
+  max_cells_in_memory = 3e+07,
+  include_cell = FALSE
 )
 }
 \arguments{
@@ -59,6 +75,9 @@ a given time when using a named summary operation
 for \code{fun} (as opposed to a function defined using
 R code). If a polygon covers more than \code{max_cells_in_memory}
 raster cells, it will be processed in multiple chunks.}
+
+\item{include_cell}{if \code{TRUE}, augment the returned data frame with
+column for cell index}
 
 \item{weights}{a weighting raster to be used with the \code{weighted_mean}
 and \code{weighted_sum} summary operations.}
@@ -115,7 +134,7 @@ The following summary operations are supported:
                               and the value of a second weighting raster provided
                               as \code{weights}}
  \item{\code{weighted_sum} - the sum of defined raster cell values, multiplied by
-                             the fraction of each cell taht is covered by the polygon
+                             the fraction of each cell that is covered by the polygon
                               and the value of a second weighting raster provided
                               as \code{weights}}
 }

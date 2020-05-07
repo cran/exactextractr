@@ -3,7 +3,7 @@
 #
 # This software is licensed under the Apache License, Version 2.0 (the "License").
 # You may not use this file except in compliance with the License. You may
-# obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+# obtain a copy of the License ta http://www.apache.org/licenses/LICENSE-2.0.
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -186,6 +186,25 @@ test_that('MultiPolygons also work', {
   expect_equal(exact_extract(rast, multipoly, fun='variety'), 18)
 })
 
+test_that('Generic sfc_GEOMETRY works if the features are polygonal', {
+  rast <- make_square_raster(1:100)
+  polys <- st_as_sfc(c('POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))',
+                       'MULTIPOLYGON (((2 2, 4 2, 4 4, 2 4, 2 2)), ((4 4, 8 4, 8 8, 4 8, 4 4)))'),
+                     crs=sf::st_crs(rast))
+
+  expect_equal(exact_extract(rast, polys, 'count'),
+               c(4, 4+16))
+})
+
+test_that('Generic sfc_GEOMETRY fails if a feature is not polygonal', {
+  rast <- make_square_raster(1:100)
+  features <- st_as_sfc(c('POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))',
+                          'POINT (2 7)'), crs=sf::st_crs(rast))
+
+  expect_error(exact_extract(rast, features, 'sum'),
+               'must be polygonal')
+})
+
 test_that('We ignore portions of the polygon that extend outside the raster', {
   rast <- raster::raster(matrix(1:(360*720), nrow=360),
                          xmn=-180, xmx=180, ymn=-90, ymx=90,
@@ -198,6 +217,13 @@ test_that('We ignore portions of the polygon that extend outside the raster', {
   expect_equal(cells_included,
                data.frame(x=179.75, y=c(0.75, 0.25)),
                check.attributes=FALSE)
+
+
+  index_included <- exact_extract(rast, rect, include_xy=TRUE, include_cell = TRUE)[[1]][, c('x', 'y', 'cell')]
+  expect_equivalent(as.matrix(cells_included[c("x", "y")]),
+               raster::xyFromCell(rast, index_included$cell))
+  expect_equal(index_included$cell,
+               raster::cellFromXY(rast, cbind(cells_included$x, cells_included$y)))
 })
 
 test_that('Additional arguments can be passed to fun', {
@@ -355,8 +381,12 @@ test_that('We get acceptable default values when processing a polygon that does 
   expect_equal(list(data.frame(value=numeric(), coverage_fraction=numeric())),
                exact_extract(rast, poly))
 
-  expect_equal(list(data.frame(value=numeric(), x=numeric(), y=numeric(), coverage_fraction=numeric())),
-               exact_extract(rast, poly, include_xy=TRUE))
+  expect_equal(list(data.frame(value=numeric(),
+                               x=numeric(),
+                               y=numeric(),
+                               cell=numeric(),
+                               coverage_fraction=numeric())),
+               exact_extract(rast, poly, include_xy=TRUE, include_cell=TRUE))
 
   expect_equal(0, exact_extract(rast, poly, function(x, c) sum(x)))
   expect_equal(0, exact_extract(rast, poly, 'count'))
@@ -378,8 +408,14 @@ test_that('We get acceptable default values when processing a polygon that does 
   expect_equal(list(data.frame(q=numeric(), xi=integer(), area=numeric(), coverage_fraction=numeric())),
                exact_extract(stk, poly))
 
-  expect_equal(list(data.frame(q=numeric(), xi=integer(), area=numeric(), x=numeric(), y=numeric(), coverage_fraction=numeric())),
-               exact_extract(stk, poly, include_xy=TRUE))
+  expect_equal(list(data.frame(q=numeric(),
+                               xi=integer(),
+                               area=numeric(),
+                               x=numeric(),
+                               y=numeric(),
+                               cell=numeric(),
+                               coverage_fraction=numeric())),
+               exact_extract(stk, poly, include_xy=TRUE, include_cell=TRUE))
 
   exact_extract(stk, poly, function(values, cov) {
     expect_equal(values, data.frame(q=numeric(), xi=integer(), area=numeric()))
@@ -402,11 +438,13 @@ test_that('We can optionally get cell center coordinates included in our output'
     )
   ), crs=sf::st_crs(rast))
 
-  results <- exact_extract(rast, poly, include_xy=TRUE)[[1]]
+  results <- exact_extract(rast, poly, include_xy=TRUE, include_cell=TRUE)[[1]]
 
   # check that correct ranges of X,Y values are output
   expect_equal( c(3.5, 4.5, 5.5, 6.5, 7.5), sort(unique(results[, 'x'])))
   expect_equal( c(4.5, 5.5, 6.5),           sort(unique(results[, 'y'])))
+
+  expect_equal(results[, 'cell'], raster::cellFromXY(rast, results[, c('x', 'y')]))
 
   # check the XY values of an individal cell with a known coverage fraction
   expect_equal( results[results[, 'x']==3.5 & results[,'y']==4.5, 'coverage_fraction'],
@@ -564,4 +602,61 @@ test_that('Correct results obtained when max_cells_in_memory is limited', {
 
   expect_equal(exact_extract(rast, poly, 'mean'),
                exact_extract(rast, poly, 'mean', max_cells_in_memory=1))
+})
+
+test_that('Weighted stats work when polygon is contained in weight raster but only partially contained in value raster', {
+  values <- raster(matrix(1:15, nrow=3, ncol=5, byrow=TRUE),
+                   xmn=0, xmx=5, ymn=2, ymx=5)
+  weights <- raster(sqrt(matrix(1:25, nrow=5, ncol=5, byrow=TRUE)),
+                    xmn=0, xmx=5, ymn=0, ymx=5)
+  poly <- make_circle(2.1, 2.1, 1, NA_real_)
+
+  value_tbl <- exact_extract(values, poly, include_xy=TRUE)[[1]]
+  weight_tbl <- exact_extract(weights, poly, include_xy=TRUE)[[1]]
+
+  tbl <- merge(value_tbl, weight_tbl, by=c('x', 'y'))
+
+  expect_equal(
+    exact_extract(values, poly, 'weighted_mean', weights=weights),
+    weighted.mean(tbl$value.x, tbl$coverage_fraction.x * tbl$value.y),
+    tol=1e-6
+  )
+})
+
+test_that('When part of a polygon is within the value raster but not the
+           weighting raster, values for unweighted stats requested at the
+           same time as weighted stats are correct', {
+
+  values <- raster(matrix(1:25, nrow=5, ncol=5, byrow=TRUE),
+                    xmn=0, xmx=5, ymn=0, ymx=5)
+  weights <- raster(sqrt(matrix(1:15, nrow=3, ncol=5, byrow=TRUE)),
+                   xmn=0, xmx=5, ymn=2, ymx=5)
+  poly <- make_circle(2.1, 2.1, 1, NA_real_)
+
+  expect_equal(
+    exact_extract(values, poly, 'sum'),
+    exact_extract(values, poly, c('sum', 'weighted_mean'), weights=weights)$sum
+  )
+})
+
+test_that('When polygon is entirely outside the value raster and entirely
+           within the weighting raster, we get NA instead of an exception', {
+  values <- raster(matrix(1:25, nrow=5, ncol=5, byrow=TRUE),
+                    xmn=5, xmx=10, ymn=5, ymx=10)
+  weights <- raster(matrix(1:10, nrow=10, ncol=10, byrow=TRUE),
+                   xmn=0, xmx=10, ymn=0, ymx=10)
+  poly <- make_circle(2.1, 2.1, 1, NA_real_)
+
+  expect_equal(NA_real_,
+               exact_extract(values, poly, 'weighted_mean', weights=weights))
+})
+
+test_that('Z dimension is ignored, if present', {
+  # see https://github.com/isciences/exactextractr/issues/26
+  poly <- st_as_sfc('POLYGON Z ((1 1 0, 4 1 0, 4 4 0, 1 1 0))')
+  values <- raster(matrix(1:25, nrow=5, ncol=5, byrow=TRUE),
+                   xmn=0, xmx=5, ymn=0, ymx=5)
+
+  expect_equal(exact_extract(values, poly, 'sum'), 70.5) # CPP code path
+  expect_equal(exact_extract(values, poly, function(x,f) sum(x*f)), 70.5) # R code path
 })
