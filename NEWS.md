@@ -1,3 +1,10 @@
+# version 0.4.0
+
+- Add named summary operations for variance, standard deviation, coefficient of variation
+- Improve performance, most dramatically for named summary operations on RasterStack or RasterBrick inputs.
+- Avoid floating point robustness error when computing stats on certain polygons using
+  different resolution value and weighting rasters.
+
 # version 0.3.0
 
 - Add include_cell argument to exact_extract (Michael Sumner)

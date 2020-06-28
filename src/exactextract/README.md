@@ -34,7 +34,14 @@ The weighting raster does not need to have the same resolution and extent as the
 
 ### Compiling
 
-`exactextract` requires C++14 to build. It can be built as follows on Linux, using CMake 3.7 or greater:
+`exactextract` requires the following:
+
+* A C++14 compiler (e.g., gcc 5.0+)
+* CMake 3.8+
+* [GEOS](https://github.com/libgeos/geos) version 3.5+
+* [GDAL](https://github.com/osgeo/GDAL) version 2.0+
+
+It can be built as follows on Linux as follows:
 
 ```bash
 git clone https://github.com/isciences/exactextract
@@ -45,9 +52,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 sudo make install
 ```
-
-No testing has yet been performed on Windows or OS X.
-Feedback concerning building on these platforms is welcome.
 
 ### Using `exactextract`
 
@@ -155,4 +159,6 @@ The area covered by the polygon is shaded purple.
 | minority       | -                                                                                    | The raster value occupying the least number of cells, taking into account cell coverage fractions but not weighting raster values. | Most common land cover type | - |
 | majority       | -                                                                                    | The raster value occupying the greatest number of cells, taking into account cell coverage fractions but not weighting raster values. | Least common land cover type | - |
 | variety        | -                                                                                    | The number of distinct raster values in cells wholly or partially covered by the polygon. | Number of land cover types | - |
-
+| variance       | (&Sigma;c<sub>i</sub>(x<sub>i</sub> - x&#773;)<sup>2</sup>)/(&Sigma;c<sub>i</sub>)                | Population variance of cell values that intersect the polygon, taking into account coverage fraction. | - | 1.10 |
+| stdev          | &Sqrt;variance                                                                       | Population standard deviation of cell values that intersect the polygon, taking into account coverage fraction. | - | 1.05 |
+| coefficient_of_variation | stdev / mean                                                               | Population coefficient of variation of cell values that intersect the polygon, taking into account coverage fraction. | - | 0.41 |
