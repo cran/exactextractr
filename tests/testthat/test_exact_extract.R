@@ -15,39 +15,6 @@ library(testthat)
 library(exactextractr)
 context('exact_extract')
 
-make_rect <- function(xmin, ymin, xmax, ymax, crs) {
-  sf::st_sfc(
-    sf::st_polygon(
-      list(
-        matrix(
-          c(xmin, ymin,
-            xmax, ymin,
-            xmax, ymax,
-            xmin, ymax,
-            xmin, ymin),
-          ncol=2,
-          byrow=TRUE))),
-    crs=crs)
-}
-
-make_circle <- function(x, y, r, crs) {
-  suppressWarnings(sf::st_buffer(
-    sf::st_sfc(
-      sf::st_point(c(x, y)),
-      crs=crs),
-    r))
-}
-
-make_square_raster <- function(vals, crs='+proj=longlat +datum=WGS84') {
-  n <- sqrt(length(vals))
-
-  stopifnot(as.integer(n) == n)
-
-  raster::raster(matrix(vals, nrow=n, byrow=TRUE),
-                 xmn=0, xmx=n, ymn=0, ymx=n,
-                 crs=crs)
-}
-
 test_that("Basic stat functions work", {
   # This test just verifies a successful journey from R
   # to C++ and back. The correctness of the algorithm
@@ -74,6 +41,9 @@ test_that("Basic stat functions work", {
   # Calling with a string computes a named operation from the C++ library
   expect_equal(exact_extract(rast, square, fun='count'), 4)
   expect_equal(exact_extract(rast, square, fun='mean'), 5)
+  expect_equal(exact_extract(rast, square, fun='median'), 5)
+  expect_equal(exact_extract(rast, square, fun='quantile', quantiles=0.25), 3.5)
+  expect_equal(exact_extract(rast, square, fun='quantile', quantiles=0.75), 6.5)
   expect_equal(exact_extract(rast, square, fun='min'), 1)
   expect_equal(exact_extract(rast, square, fun='max'), 9)
   expect_equal(exact_extract(rast, square, fun='mode'), 5)
@@ -88,7 +58,7 @@ test_that("Basic stat functions work", {
   expect_equal(exact_extract(rast, square, fun=c('min', 'max', 'mode')),
                data.frame(min=1, max=9, mode=5))
 
-  expect_equal(exact_extract(rast, c(square, square), fun=c('min', 'max', 'mode')),
+  expect_equal(exact_extract(rast, c(square, square), fun=c('min', 'max', 'mode'), progress = FALSE),
                data.frame(min=c(1, 1), max=c(9, 9), mode=c(5, 5)))
 })
 
@@ -195,7 +165,7 @@ test_that('Generic sfc_GEOMETRY works if the features are polygonal', {
                        'MULTIPOLYGON (((2 2, 4 2, 4 4, 2 4, 2 2)), ((4 4, 8 4, 8 8, 4 8, 4 4)))'),
                      crs=sf::st_crs(rast))
 
-  expect_equal(exact_extract(rast, polys, 'count'),
+  expect_equal(exact_extract(rast, polys, 'count', progress = FALSE),
                c(4, 4+16))
 })
 
@@ -204,7 +174,7 @@ test_that('Generic sfc_GEOMETRY fails if a feature is not polygonal', {
   features <- st_as_sfc(c('POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))',
                           'POINT (2 7)'), crs=sf::st_crs(rast))
 
-  expect_error(exact_extract(rast, features, 'sum'),
+  expect_error(exact_extract(rast, features, 'sum', progress = FALSE),
                'must be polygonal')
 })
 
@@ -338,6 +308,52 @@ test_that('We can pass extracted RasterStack values to a C++ function', {
   }
 })
 
+test_that('We can apply the same function to each layer of a RasterStack', {
+  set.seed(123)
+
+  stk <- raster::stack(list(a = make_square_raster(runif(100)),
+                            b = make_square_raster(runif(100))))
+
+  circles <- c(
+    make_circle(5, 4, 2, sf::st_crs(stk)),
+    make_circle(3, 1, 1, sf::st_crs(stk)))
+
+  # by default layers are processed together
+  expect_error(
+    exact_extract(stk, circles, weighted.mean, progress=FALSE),
+    'must have the same length'
+  )
+
+  # but we can process them independently with stack_apply
+  means <- exact_extract(stk, circles, weighted.mean, progress=FALSE, stack_apply=TRUE)
+
+  expect_named(means, c('fun.a', 'fun.b'))
+
+  # results are same as we would get by processing layers independently
+  for (i in 1:raster::nlayers(stk)) {
+    expect_equal(means[, i], exact_extract(stk[[i]], circles, weighted.mean, progress=FALSE))
+  }
+})
+
+test_that('We can use the stack_apply argument with include_xy and include_cols', {
+  set.seed(123)
+
+  stk <- raster::stack(list(a = make_square_raster(runif(100)),
+                            b = make_square_raster(runif(100))))
+
+  circles <- c(
+    make_circle(5, 4, 2, sf::st_crs(stk)),
+    make_circle(3, 1, 1, sf::st_crs(stk)))
+
+  result <- exact_extract(stk, circles, include_xy = TRUE, stack_apply = TRUE, progress = FALSE,
+                          function(df, frac) {
+                            weighted.mean(df$value[df$y > 1],
+                                          frac[df$y > 1])
+                          })
+
+  expect_named(result, c('fun.a', 'fun.b'))
+})
+
 test_that('We can summarize a RasterStack / RasterBrick using weights from a RasterLayer', {
   set.seed(123)
 
@@ -449,16 +465,16 @@ test_that('We can optionally get cell center coordinates included in our output'
 
   expect_equal(results[, 'cell'], raster::cellFromXY(rast, results[, c('x', 'y')]))
 
-  # check the XY values of an individal cell with a known coverage fraction
+  # check the XY values of an individual cell with a known coverage fraction
   expect_equal( results[results[, 'x']==3.5 & results[,'y']==4.5, 'coverage_fraction'],
                 0.2968749999999998,
                 tolerance=1e-8,
                 check.attributes=FALSE)
 
   # we can also send the weights to a callback
-  exact_extract(rast, st_sf(data.frame(id=1), geom=poly), include_xy=TRUE, fun=function(values, weights) {
+  exact_extract(rast, sf::st_sf(data.frame(id=1), geom=poly), include_xy=TRUE, fun=function(values, weights) {
     expect_equal(3, ncol(values))
-  })
+  }, progress=FALSE)
 })
 
 test_that('Warning is raised on CRS mismatch', {
@@ -557,9 +573,7 @@ test_that('Error thrown if value raster and weighting raster have incompatible g
 })
 
 test_that('Error is raised if function has unexpected signature', {
-  rast <- raster::raster(matrix(1:100, nrow=10),
-                         xmn=0, xmx=10, ymn=0, ymx=10,
-                         crs='+proj=longlat +datum=WGS84')
+  rast <- make_square_raster(1:100)
 
   poly <- make_circle(5, 5, 3, sf::st_crs(rast))
 
@@ -581,9 +595,7 @@ test_that('Error is raised for unknown summary operation', {
 })
 
 test_that('Error is raised if arguments passed to summary operation', {
-  rast <- raster::raster(matrix(1:100, nrow=10),
-                         xmn=0, xmx=10, ymn=0, ymx=10,
-                         crs='+proj=longlat +datum=WGS84')
+  rast <- make_square_raster(1:100)
 
   poly <- make_circle(5, 5, 3, sf::st_crs(rast))
 
@@ -677,4 +689,168 @@ test_that('No error thrown when weighting with different resolution grid (regres
 
    exact_extract(v, poly, 'weighted_sum', weights=w)
    succeed()
+})
+
+test_that('We can get data frame output if we request it', {
+  rast <- make_square_raster(1:100)
+  names(rast) <- 'z'
+  poly <- c(make_circle(5, 5, 3, sf::st_crs(rast)),
+            make_circle(3, 1, 1, sf::st_crs(rast)))
+
+  vals <- exact_extract(rast, poly, 'mean', progress=FALSE)
+
+  # named summary operation
+  vals_df <- exact_extract(rast, poly, 'mean', force_df=TRUE, progress=FALSE)
+  expect_s3_class(vals_df, 'data.frame')
+  expect_equal(vals, vals_df[['mean']])
+
+  # R function
+  vals2_df <- exact_extract(rast, poly, weighted.mean, force_df=TRUE, progress=FALSE)
+  expect_s3_class(vals2_df, 'data.frame')
+  expect_equal(vals, vals2_df[['result']], tol=1e-6)
+})
+
+test_that('We can have include the input raster name in column names even if
+           the input raster has only one layer', {
+  rast <- make_square_raster(1:100)
+  names(rast) <- 'z'
+  poly <- c(make_circle(5, 5, 3, sf::st_crs(rast)),
+            make_circle(3, 1, 1, sf::st_crs(rast)))
+
+  vals <- exact_extract(rast, poly, c('mean', 'sum'), progress=FALSE)
+  expect_named(vals, c('mean', 'sum'))
+
+  # named summary operations
+  vals_named <- exact_extract(rast, poly, c('mean', 'sum'), full_colnames=TRUE, progress=FALSE)
+  expect_named(vals_named, c('mean.z', 'sum.z'))
+})
+
+test_that('We can summarize a categorical raster by returning a data frame from a custom function', {
+  set.seed(456) # smaller circle does not have class 5
+
+  classes <- c(1, 2, 3, 5)
+
+  rast <- raster::raster(xmn = 0, xmx = 10, ymn = 0, ymx = 10, res = 1)
+  values(rast) <- sample(classes, length(rast), replace = TRUE)
+
+  circles <- c(
+    make_circle(5, 4, 2, sf::st_crs(rast)),
+    make_circle(3, 1, 1, sf::st_crs(rast)))
+
+  # approach 1: classes known in advance
+  result <- exact_extract(rast, circles, function(x, c) {
+    row <- lapply(classes, function(cls) sum(c[x == cls]))
+    names(row) <- paste('sum', classes, sep='_')
+    do.call(data.frame, row)
+  }, progress = FALSE)
+
+  expect_named(result, c('sum_1', 'sum_2', 'sum_3', 'sum_5'))
+
+  # check a single value
+  expect_equal(result[2, 'sum_3'],
+               exact_extract(rast, circles[2, ], function(x, c) {
+                sum(c[x == 3])
+               }))
+
+  if (requireNamespace('dplyr', quietly = TRUE)) {
+    # approach 2: classes not known in advance (requires dplyr::bind_rows)
+    result2 <- exact_extract(rast, circles, function(x, c) {
+      found_classes <- unique(x)
+      row <- lapply(found_classes, function(cls) sum(c[x == cls]))
+      names(row) <- paste('sum', found_classes, sep='_')
+      do.call(data.frame, row)
+    }, progress = FALSE)
+
+    for (colname in names(result)) {
+      expect_equal(result[[colname]], dplyr::coalesce(result2[[colname]], 0))
+    }
+  }
+})
+
+test_that('Error is thrown when using include_* with named summary operation', {
+  rast <- make_square_raster(1:100)
+
+  circles <- st_sf(
+    fid = c(2, 9),
+    size = c('large', 'small'),
+    geometry =  c(
+    make_circle(5, 4, 2, sf::st_crs(rast)),
+    make_circle(3, 1, 1, sf::st_crs(rast))))
+
+  expect_error(exact_extract(rast, circles, 'sum', include_xy = TRUE),
+               'include_xy must be FALSE')
+
+  expect_error(exact_extract(rast, circles, 'sum', include_cell = TRUE),
+               'include_cell must be FALSE')
+
+  expect_error(exact_extract(rast, circles, 'sum', include_cols = 'fid'),
+               'include_cols not supported')
+})
+
+test_that('We can append columns from the source data frame in the results', {
+  rast <- make_square_raster(1:100)
+
+  circles <- st_sf(
+    fid = c(2, 9),
+    size = c('large', 'small'),
+    geometry =  c(
+    make_circle(5, 4, 2, sf::st_crs(rast)),
+    make_circle(3, 1, 1, sf::st_crs(rast))))
+
+  result_1 <- exact_extract(rast, circles, 'mean', append_cols = c('size', 'fid'), progress = FALSE)
+  expect_named(result_1, c('size', 'fid', 'mean'))
+
+  result_2 <- exact_extract(rast, circles, weighted.mean, append_cols = c('size', 'fid'), progress = FALSE)
+  # result_2 won't be identical to result_2 because the column names are different
+  # instead, check that the naming is consistent with what we get from the force_df argument
+  expect_identical(result_2,
+                   cbind(sf::st_drop_geometry(circles[, c('size', 'fid')]),
+                         exact_extract(rast, circles, weighted.mean, force_df = TRUE)))
+})
+
+test_that('We can include columns from the source data frame in returned data frames', {
+  rast <- make_square_raster(1:100)
+
+  circles <- st_sf(
+    fid = c(2, 9),
+    size = c('large', 'small'),
+    geometry =  c(
+    make_circle(5, 4, 2, sf::st_crs(rast)),
+    make_circle(3, 1, 1, sf::st_crs(rast))))
+
+  combined_result <- do.call(rbind, exact_extract(rast, circles, include_cols = 'fid', progress = FALSE))
+  expect_named(combined_result, c('fid', 'value', 'coverage_fraction'))
+})
+
+test_that('We can get multiple quantiles with the "quantiles" argument', {
+ rast <- make_square_raster(1:100)
+
+  circles <- st_sf(
+    fid = c(2, 9),
+    size = c('large', 'small'),
+    geometry =  c(
+    make_circle(5, 4, 2, sf::st_crs(rast)),
+    make_circle(3, 1, 1, sf::st_crs(rast))))
+
+  result <- exact_extract(rast, circles, 'quantile', quantiles=c(0.25, 0.50, 0.75), progress=FALSE)
+  expect_true(inherits(result, 'data.frame'))
+
+  expect_named(result, c('q25', 'q50', 'q75'))
+})
+
+test_that('Error is thrown if quantiles not specified or not valid', {
+ rast <- make_square_raster(1:100)
+ square <- make_rect(2, 2, 4, 4, crs=sf::st_crs(rast))
+
+ expect_error(exact_extract(rast, square, 'quantile'),
+              'Quantiles not specified')
+
+ expect_error(exact_extract(rast, square, 'quantile', quantiles=NA),
+              'must be between 0 and 1')
+
+ expect_error(exact_extract(rast, square, 'quantile', quantiles=c(0.5, 1.1)),
+              'must be between 0 and 1')
+
+ expect_error(exact_extract(rast, square, 'quantile', quantiles=numeric()),
+              'Quantiles not specified')
 })

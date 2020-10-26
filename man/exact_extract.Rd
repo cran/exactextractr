@@ -16,7 +16,13 @@
   include_xy = FALSE,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  include_cell = FALSE
+  include_cell = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  append_cols = NULL,
+  include_cols = NULL,
+  quantiles = NULL
 )
 
 \S4method{exact_extract}{Raster,sfc_MULTIPOLYGON}(
@@ -28,7 +34,13 @@
   include_xy = FALSE,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  include_cell = FALSE
+  include_cell = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  append_cols = NULL,
+  include_cols = NULL,
+  quantiles = NULL
 )
 
 \S4method{exact_extract}{Raster,sfc_POLYGON}(
@@ -40,7 +52,13 @@
   include_xy = FALSE,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  include_cell = FALSE
+  include_cell = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  append_cols = NULL,
+  include_cols = NULL,
+  quantiles = NULL
 )
 
 \S4method{exact_extract}{Raster,sfc_GEOMETRY}(
@@ -52,7 +70,13 @@
   include_xy = FALSE,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  include_cell = FALSE
+  include_cell = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  append_cols = NULL,
+  include_cols = NULL,
+  quantiles = NULL
 )
 }
 \arguments{
@@ -64,9 +88,12 @@
 
 \item{...}{additional arguments to pass to \code{fun}}
 
-\item{include_xy}{if \code{TRUE}, augment the returned data frame with
-columns for cell center coordinates (\code{x} and
-\code{y}) or pass them to \code{fun}}
+\item{include_xy}{if \code{TRUE}, and \code{fun} is \code{NULL}, augment
+the returned data frame for each feature with columns
+for cell center coordinates (\code{x} and \code{y}). If
+\code{TRUE} and \code{fun} is not \code{NULL}, add
+\code{x} and {y} to the data frame passed to \code{fun}
+for each feature.}
 
 \item{progress}{if \code{TRUE}, display a progress bar during processing}
 
@@ -76,8 +103,35 @@ for \code{fun} (as opposed to a function defined using
 R code). If a polygon covers more than \code{max_cells_in_memory}
 raster cells, it will be processed in multiple chunks.}
 
-\item{include_cell}{if \code{TRUE}, augment the returned data frame with
-column for cell index}
+\item{include_cell}{if \code{TRUE}, and \code{fun} is \code{NULL}, augment
+the returned data frame for each feature with a column
+for the cell index (\code{cell}). If \code{TRUE} and
+\code{fun} is not \code{NULL}, add \code{cell} to the
+data frame passed to \code{fun} for each feature.}
+
+\item{force_df}{always return a data frame instead of a vector, even if
+\code{x} has only one layer and \code{fun} has length 1}
+
+\item{full_colnames}{include the names of \code{x} in the names of the
+returned data frame, even if \code{x} has only one
+layer. This is useful when the results of multiple
+calls to \code{exact_extract} are combined with
+\code{cbind}.}
+
+\item{stack_apply}{if \code{TRUE}, apply \code{fun} to each layer of
+\code{x} independently. If \code{FALSE}, apply \code{fun}
+to all layers of \code{x} simultaneously.}
+
+\item{append_cols}{when \code{fun} is not \code{NULL}, an optional
+character vector of columns from \code{y} to be
+included in returned data frame.}
+
+\item{include_cols}{an optional character vector of column names in
+\code{y} to be added to the data frame for each
+feature that is either returned (when \code{fun} is
+\code{NULL}) or passed to \code{fun}.}
+
+\item{quantiles}{quantiles to be computed when \code{fun == 'quantile'}}
 
 \item{weights}{a weighting raster to be used with the \code{weighted_mean}
 and \code{weighted_sum} summary operations.}
@@ -103,7 +157,10 @@ is specified, \code{exact_extract} will return a vector with the result
 of the summary operation for each feature in the input. If the input
 raster has multiple layers, or if multiple summary operations are specified,
 \code{exact_extract} will return a data frame with a row for each feature
-and a column for each summary operation / layer combination.
+and a column for each summary operation / layer combination. (The
+\code{force_df} can be used to always return a data frame instead of a vector.)
+In all of the summary operations, \code{NA} values in the raster are ignored
+(i.e., \code{na.rm = TRUE}.)
 
 The following summary operations are supported:
 
@@ -118,6 +175,11 @@ The following summary operations are supported:
                       the fraction of the cell that is covered by the polygon}
  \item{\code{mean} - the mean cell value, weighted by the fraction of each cell
                      that is covered by the polygon}
+ \item{\code{median} - the median cell value, weighted by the fraction of each
+                       cell that is covered by the polygon}
+ \item{\code{quantile} - arbitrary quantile(s) of cell values, specified in
+                         \code{quantiles}, weighted by the fraction of each
+                         cell that is covered by the polygon}
  \item{\code{mode} - the most common cell value, weighted by the fraction of
                      each cell that is covered by the polygon. Where multiple
                      values occupy the same maximum number of weighted cells,

@@ -33,7 +33,10 @@ if (!isGeneric("exact_extract")) {
 #' of the summary operation for each feature in the input. If the input
 #' raster has multiple layers, or if multiple summary operations are specified,
 #' \code{exact_extract} will return a data frame with a row for each feature
-#' and a column for each summary operation / layer combination.
+#' and a column for each summary operation / layer combination. (The
+#' \code{force_df} can be used to always return a data frame instead of a vector.)
+#' In all of the summary operations, \code{NA} values in the raster are ignored
+#' (i.e., \code{na.rm = TRUE}.)
 #'
 #' The following summary operations are supported:
 #'
@@ -48,6 +51,11 @@ if (!isGeneric("exact_extract")) {
 #'                       the fraction of the cell that is covered by the polygon}
 #'  \item{\code{mean} - the mean cell value, weighted by the fraction of each cell
 #'                      that is covered by the polygon}
+#'  \item{\code{median} - the median cell value, weighted by the fraction of each
+#'                        cell that is covered by the polygon}
+#'  \item{\code{quantile} - arbitrary quantile(s) of cell values, specified in
+#'                          \code{quantiles}, weighted by the fraction of each
+#'                          cell that is covered by the polygon}
 #'  \item{\code{mode} - the most common cell value, weighted by the fraction of
 #'                      each cell that is covered by the polygon. Where multiple
 #'                      values occupy the same maximum number of weighted cells,
@@ -88,20 +96,44 @@ if (!isGeneric("exact_extract")) {
 #'
 #' @param     x a \code{RasterLayer}, \code{RasterStack}, or \code{RasterBrick}
 #' @param     y a sf object with polygonal geometries
-#' @param     include_xy if \code{TRUE}, augment the returned data frame with
-#'                        columns for cell center coordinates (\code{x} and
-#'                        \code{y}) or pass them to \code{fun}
-#' @param     include_cell if \code{TRUE}, augment the returned data frame with
-#'                        column for cell index
 #' @param     fun an optional function or character vector, as described below
+#' @param     weights  a weighting raster to be used with the \code{weighted_mean}
+#'                     and \code{weighted_sum} summary operations.
+#' @param     quantiles   quantiles to be computed when \code{fun == 'quantile'}
+#' @param     append_cols when \code{fun} is not \code{NULL}, an optional
+#'                        character vector of columns from \code{y} to be
+#'                        included in returned data frame.
+#' @param     force_df always return a data frame instead of a vector, even if
+#'                     \code{x} has only one layer and \code{fun} has length 1
+#' @param     full_colnames include the names of \code{x} in the names of the
+#'                          returned data frame, even if \code{x} has only one
+#'                          layer. This is useful when the results of multiple
+#'                          calls to \code{exact_extract} are combined with
+#'                          \code{cbind}.
+#' @param     include_cell if \code{TRUE}, and \code{fun} is \code{NULL}, augment
+#'                       the returned data frame for each feature with a column
+#'                       for the cell index (\code{cell}). If \code{TRUE} and
+#'                       \code{fun} is not \code{NULL}, add \code{cell} to the
+#'                       data frame passed to \code{fun} for each feature.
+#' @param     include_cols an optional character vector of column names in
+#'                         \code{y} to be added to the data frame for each
+#'                         feature that is either returned (when \code{fun} is
+#'                         \code{NULL}) or passed to \code{fun}.
+#' @param     include_xy if \code{TRUE}, and \code{fun} is \code{NULL}, augment
+#'                       the returned data frame for each feature with columns
+#'                       for cell center coordinates (\code{x} and \code{y}). If
+#'                       \code{TRUE} and \code{fun} is not \code{NULL}, add
+#'                       \code{x} and {y} to the data frame passed to \code{fun}
+#'                       for each feature.
+#' @param     stack_apply   if \code{TRUE}, apply \code{fun} to each layer of
+#'                          \code{x} independently. If \code{FALSE}, apply \code{fun}
+#'                          to all layers of \code{x} simultaneously.
 #' @param     max_cells_in_memory the maximum number of raster cells to load at
 #'                                a given time when using a named summary operation
 #'                                for \code{fun} (as opposed to a function defined using
 #'                                R code). If a polygon covers more than \code{max_cells_in_memory}
 #'                                raster cells, it will be processed in multiple chunks.
 #' @param     progress if \code{TRUE}, display a progress bar during processing
-#' @param     weights  a weighting raster to be used with the \code{weighted_mean}
-#'                     and \code{weighted_sum} summary operations.
 #' @param     ... additional arguments to pass to \code{fun}
 #' @return a vector or list of data frames, depending on the type of \code{x} and the
 #'         value of \code{fun} (see Details)
@@ -134,8 +166,29 @@ NULL
 #' @useDynLib exactextractr
 #' @rdname exact_extract
 #' @export
-setMethod('exact_extract', signature(x='Raster', y='sf'), function(x, y, fun=NULL, ..., include_xy=FALSE, progress=TRUE, max_cells_in_memory=30000000, include_cell=FALSE) {
-  exact_extract(x, sf::st_geometry(y), fun=fun, ..., include_xy=include_xy, progress=progress, max_cells_in_memory=max_cells_in_memory, include_cell=include_cell)
+setMethod('exact_extract', signature(x='Raster', y='sf'),
+          function(x, y, fun=NULL, ...,
+                   include_xy=FALSE,
+                   progress=TRUE,
+                   max_cells_in_memory=30000000,
+                   include_cell=FALSE,
+                   force_df=FALSE,
+                   full_colnames=FALSE,
+                   stack_apply=FALSE,
+                   append_cols=NULL,
+                   include_cols=NULL,
+                   quantiles=NULL) {
+  .exact_extract(x, y, fun=fun, ...,
+                include_xy=include_xy,
+                progress=progress,
+                max_cells_in_memory=max_cells_in_memory,
+                include_cell=include_cell,
+                force_df=force_df,
+                full_colnames=full_colnames,
+                stack_apply=stack_apply,
+                append_cols=append_cols,
+                include_cols=include_cols,
+                quantiles=quantiles)
 })
 
 # Return the number of standard (non-...) arguments in a supplied function that
@@ -154,8 +207,28 @@ emptyVector <- function(rast) {
          numeric())
 }
 
-.exact_extract <- function(x, y, fun=NULL, ..., weights=NULL, include_xy=FALSE, progress=TRUE, max_cells_in_memory=30000000, include_cell=FALSE) {
-  if(inherits(y, 'sfc_GEOMETRY')) {
+.exact_extract <- function(x, y, fun=NULL, ...,
+                           weights=NULL,
+                           include_xy=FALSE,
+                           progress=TRUE,
+                           max_cells_in_memory=30000000,
+                           include_cell=FALSE,
+                           force_df=FALSE,
+                           full_colnames=FALSE,
+                           stack_apply=FALSE,
+                           append_cols=NULL,
+                           include_cols=NULL,
+                           quantiles=NULL) {
+  if(!is.null(append_cols)) {
+    if (!inherits(y, 'sf')) {
+      stop(sprintf('append_cols only supported for sf arguments (received %s)',
+                   paste(class(y), collapse = ' ')))
+    }
+
+    force_df <- TRUE
+  }
+
+  if(sf::st_geometry_type(y, by_geometry = FALSE) == 'GEOMETRY') {
     if (!all(sf::st_dimension(y) == 2)) {
       stop("Features in sfc_GEOMETRY must be polygonal")
     }
@@ -198,9 +271,23 @@ emptyVector <- function(rast) {
          "be of the form `function(values, coverage_fractions, ...)`")
   }
 
-  if (is.character(fun) && length(list(...)) > 0) {
-    stop("exact_extract was called with a named summary operation that ",
-         "does not accept additional arguments ...")
+  if (is.character(fun)) {
+    if (length(list(...)) > 0) {
+      stop("exact_extract was called with a named summary operation that ",
+           "does not accept additional arguments ...")
+    }
+
+    if (include_xy) {
+      stop("include_xy must be FALSE for named summary operations")
+    }
+
+    if (include_cell) {
+      stop("include_cell must be FALSE for named summary operations")
+    }
+
+    if (!is.null(include_cols)) {
+      stop("include_cols not supported for named_summary operations (see argument append_cols)")
+    }
   }
 
   if (progress && length(y) > 1) {
@@ -218,41 +305,50 @@ emptyVector <- function(rast) {
   }
 
   tryCatch({
-    x <- readStart(x)
+    x <- raster::readStart(x)
     if (!is.null(weights)) {
-      weights <- readStart(weights)
+      weights <- raster::readStart(weights)
     }
 
     if (is.character(fun)) {
-      results <- sapply(sf::st_as_binary(y, EWKB=TRUE), function(wkb) {
+      # Compute all stats in C++
+      results <- sapply(sf::st_as_binary(sf::st_geometry(y), EWKB=TRUE), function(wkb) {
+        ret <- CPP_stats(x, weights, wkb, fun, max_cells_in_memory, quantiles)
         update_progress()
-        CPP_stats(x, weights, wkb, fun, max_cells_in_memory)
+        return(ret)
       })
 
-      if (length(fun) == 1 && raster::nlayers(x) == 1) {
+      if (length(fun) == 1 &&
+          raster::nlayers(x) == 1 &&
+          (is.null(quantiles) || length(quantiles) == 1) &&
+          !force_df) {
         # Just return a vector of stat results
         return(as.vector(results))
       } else {
         # Return a data frame with a column for each stat
-        if (raster::nlayers(x) > 1) {
-          z <- expand.grid(names(x), fun, stringsAsFactors=TRUE)
-          colnames <- mapply(paste, z[[2]], z[[1]], MoreArgs=list(sep='.'))
+        colnames <- .cppStatColNames(x, fun, full_colnames, quantiles)
+
+        if (is.matrix(results)) {
+          results <- t(results)
         } else {
-          colnames <- fun
+          results <- matrix(results, nrow=length(results))
         }
 
-        results <- t(results)
         dimnames(results) <- list(NULL, colnames)
-        return(as.data.frame(results))
+        ret <- as.data.frame(results)
+
+        if (!is.null(append_cols)) {
+          ret <- cbind(sf::st_drop_geometry(y[, append_cols]), ret)
+        }
+
+        return(ret)
       }
     } else {
-      if (is.null(fun)) {
-        appfn <- lapply # return list of data frames
-      } else {
-        appfn <- sapply
-      }
+      geoms <- sf::st_geometry(y)
 
-      appfn(sf::st_as_binary(y, EWKB=TRUE), function(wkb) {
+      ret <- lapply(seq_along(geoms), function(feature_num) {
+        wkb <- sf::st_as_binary(geoms[[feature_num]], EWKB=TRUE)
+
         ret <- CPP_exact_extract(x, wkb)
 
         if (length(ret$weights) > 0) {
@@ -280,30 +376,21 @@ emptyVector <- function(rast) {
         }
 
         if (include_xy) {
-          if (nrow(vals) == 0) {
-            vals$x <- numeric()
-            vals$y <- numeric()
-          } else {
-            x_coords <- raster::xFromCol(x, col=ret$col:(ret$col+ncol(ret$weights) - 1))
-            y_coords <- raster::yFromRow(x, row=ret$row:(ret$row+nrow(ret$weights) - 1))
-
-            vals$x <- rep.int(x_coords, times=nrow(ret$weights))
-            vals$y <- rep(y_coords, each=ncol(ret$weights))
-          }
+           vals <- .appendXY(vals, x, ret$row, nrow(ret$weights), ret$col, ncol(ret$weights))
         }
 
         if (include_cell) {
-          if (nrow(vals) == 0) {
-            vals$cell <- numeric()
-          } else {
-            rows <- rep(ret$row:(ret$row+nrow(ret$weights) - 1), each=ncol(ret$weights))
-            cols <- rep.int(ret$col:(ret$col+ncol(ret$weights) - 1),
-                                     times = nrow(ret$weights))
-            vals$cell <- raster::cellFromRowCol(x,
-                                           row=rows,
-                                           col=cols)
-          }
+          vals <- .appendCell(vals, x, ret$row, nrow(ret$weights), ret$col, ncol(ret$weights))
         }
+
+        if (!is.null(include_cols)) {
+          # use vals as first argument to cbind, then rearrange names so that
+          # include_cols come first
+          vals <- cbind(vals,
+                        sf::st_drop_geometry(y[feature_num, include_cols]),
+                        row.names = NULL)[, c(include_cols, names(vals))]
+        }
+
         cov_fracs <- as.vector(t(ret$weights))
         vals <- vals[cov_fracs > 0, , drop=FALSE]
         cov_fracs <- cov_fracs[cov_fracs > 0]
@@ -315,19 +402,105 @@ emptyVector <- function(rast) {
           return(vals)
         } else {
           if (ncol(vals) == 1) {
+            # Only one layer, nothing appended (cells or XY)
             return(fun(vals[,1], cov_fracs, ...))
           } else {
-            return(fun(vals, cov_fracs, ...))
+            if (stack_apply) {
+              # Pass each layer in stack to callback individually
+              nlay <- raster::nlayers(x)
+              appended_cols <- seq_len(ncol(vals))[-seq_len(nlay)]
+
+              if (length(appended_cols) == 0) {
+                result <- lapply(seq_len(nlay), function(z)
+                  fun(vals[, z], cov_fracs, ...))
+              } else {
+                result <- lapply(seq_len(nlay), function(z)
+                  fun(cbind(data.frame(value=vals[, z]),
+                            vals[, c(appended_cols)]), cov_fracs, ...))
+              }
+
+              names(result) <- paste('fun', names(x), sep='.')
+              return(do.call(data.frame, result))
+            } else {
+              # Pass all layers to callback, to be handled together
+              return(fun(vals, cov_fracs, ...))
+            }
           }
         }
       })
+
+      if (!is.null(fun)) {
+        if (class(ret[[1]]) == 'data.frame') {
+          if (requireNamespace('dplyr', quietly = TRUE)) {
+            ret <- dplyr::bind_rows(ret) # handle column name mismatches
+          } else {
+            ret <- do.call(rbind, ret)
+          }
+        } else {
+          ret <- simplify2array(ret)
+
+          if (force_df) {
+            ret <- data.frame(result = ret)
+          }
+        }
+      }
+
+      if (!is.null(append_cols)) {
+        ret <- cbind(sf::st_drop_geometry(y[, append_cols]), ret)
+      }
+
+      return(ret)
     }
   }, finally={
-    readStop(x)
+    raster::readStop(x)
     if (!is.null(weights)) {
-      readStop(weights)
+      raster::readStop(weights)
     }
   })
+}
+
+.appendXY <- function(vals_df, rast, first_row, nrow, first_col, ncol) {
+  if (nrow(vals_df) == 0) {
+    vals_df$x <- numeric()
+    vals_df$y <- numeric()
+  } else {
+    x_coords <- raster::xFromCol(rast, col=seq(first_col, first_col + ncol - 1))
+    y_coords <- raster::yFromRow(rast, row=seq(first_row, first_row + nrow - 1))
+
+    vals_df$x <- rep(x_coords, times=nrow)
+    vals_df$y <- rep(y_coords, each=ncol)
+  }
+
+  return(vals_df)
+}
+
+.appendCell <- function(vals_df, rast, first_row, nrow, first_col, ncol) {
+  if (nrow(vals_df) == 0) {
+    vals_df$cell <- numeric()
+  } else {
+    rows <- rep(seq(first_row, first_row + nrow - 1), each = ncol)
+    cols <- rep(seq(first_col, first_col + ncol - 1), times = nrow)
+
+    vals_df$cell <- raster::cellFromRowCol(rast, row=rows, col=cols)
+  }
+
+  return(vals_df)
+}
+
+.cppStatColNames <- function(rast, stat_names, full_colnames, quantiles) {
+  quantile_index = which(stat_names == 'quantile')
+  if (length(quantile_index) != 0) {
+    stat_names <- c(stat_names[seq_along(stat_names) < quantile_index],
+                    sprintf('q%02d', as.integer(100 * quantiles)),
+                    stat_names[seq_along(stat_names) > quantile_index])
+  }
+
+  if (raster::nlayers(rast) > 1 || full_colnames) {
+    z <- expand.grid(names(rast), stat_names, stringsAsFactors=TRUE)
+    mapply(paste, z[[2]], z[[1]], MoreArgs=list(sep='.'))
+  } else {
+    stat_names
+  }
 }
 
 #' @useDynLib exactextractr

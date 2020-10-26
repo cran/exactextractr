@@ -27,6 +27,7 @@
 using geom_ptr= std::unique_ptr<GEOSGeometry, std::function<void(GEOSGeometry*)>>;
 using wkb_reader_ptr = std::unique_ptr<GEOSWKBReader, std::function<void(GEOSWKBReader*)>>;
 
+using exactextract::Box;
 using exactextract::Matrix;
 using exactextract::Grid;
 using exactextract::subdivide;
@@ -280,12 +281,38 @@ static int get_nlayers(Rcpp::S4 & rast) {
   return static_cast<int>(nlayersVec[0]);
 }
 
+static double get_stat_value(const RasterStats<double> & stats, const std::string & stat_name) {
+  if (stat_name == "mean") return stats.mean();
+
+  else if (stat_name == "sum") return stats.sum();
+  else if (stat_name == "count") return stats.count();
+
+  else if (stat_name == "min") return stats.min().value_or(NA_REAL);
+  else if (stat_name == "max") return stats.max().value_or(NA_REAL);
+
+  else if (stat_name == "mode") return stats.mode().value_or(NA_REAL);
+  else if (stat_name == "majority") return stats.mode().value_or(NA_REAL);
+  else if (stat_name == "minority") return stats.minority().value_or(NA_REAL);
+
+  else if (stat_name == "variety") return stats.variety();
+  else if (stat_name == "weighted_mean") return stats.weighted_mean();
+  else if (stat_name == "weighted_sum") return stats.weighted_sum();
+
+  else if (stat_name == "variance") return stats.variance();
+  else if (stat_name == "stdev") return stats.stdev();
+  else if (stat_name == "coefficient_of_variation") return stats.coefficient_of_variation();
+
+  else Rcpp::stop("Unknown stat: " + stat_name);
+}
+
+
 // [[Rcpp::export]]
 Rcpp::NumericMatrix CPP_stats(Rcpp::S4 & rast,
                               Rcpp::Nullable<Rcpp::S4> weights,
                               const Rcpp::RawVector & wkb,
                               const Rcpp::StringVector & stats,
-                              int max_cells_in_memory) {
+                              int max_cells_in_memory,
+                              const Rcpp::Nullable<Rcpp::NumericVector> & quantiles) {
   try {
     GEOSAutoHandle geos;
 
@@ -311,13 +338,15 @@ Rcpp::NumericMatrix CPP_stats(Rcpp::S4 & rast,
     }
 
     bool store_values = false;
-
+    int stat_result_size = 0;
     for (const auto & stat : stats) {
       // explicit construction of std::string seems necessary to avoid ambiguous overload error
       if (stat == std::string("mode") ||
           stat == std::string("majority") ||
           stat == std::string("minority") ||
-          stat == std::string("variety")) {
+          stat == std::string("variety") ||
+          stat == std::string("median") ||
+          stat == std::string("quantile")) {
         store_values = true;
       }
 
@@ -325,6 +354,23 @@ Rcpp::NumericMatrix CPP_stats(Rcpp::S4 & rast,
           (stat == std::string("weighted_mean") ||
           stat == std::string("weighted_sum"))) {
         Rcpp::stop("Weighted stat requested but no weights provided.");
+      }
+
+      if (stat == std::string("quantile")) {
+        int num_quantiles = 0;
+
+        if (quantiles.isNotNull()) {
+          Rcpp::NumericVector qvec = quantiles.get();
+          num_quantiles = qvec.size();
+        }
+
+        if (num_quantiles == 0) {
+          Rcpp::stop("Quantiles not specified.");
+        }
+
+        stat_result_size += num_quantiles;
+      } else {
+        stat_result_size += 1;
       }
     }
 
@@ -334,7 +380,7 @@ Rcpp::NumericMatrix CPP_stats(Rcpp::S4 & rast,
       raster_stats.emplace_back(store_values);
     }
 
-    Rcpp::NumericMatrix stat_results = Rcpp::no_init(nlayers, stats.size());
+    Rcpp::NumericMatrix stat_results = Rcpp::no_init(nlayers, stat_result_size);
 
     auto geom = read_wkb(geos.handle, wkb);
     auto bbox = exactextract::geos_get_box(geos.handle, geom.get());
@@ -367,34 +413,99 @@ Rcpp::NumericMatrix CPP_stats(Rcpp::S4 & rast,
     }
 
     for (int j = 0; j < nlayers; j++) {
-      for(int i = 0; i < stats.size(); i++) {
-        if (stats[i] == std::string("mean")) stat_results(j, i) = raster_stats[j].mean();
+      const auto& rs = raster_stats[j];
 
-        else if (stats[i] == std::string("sum")) stat_results(j, i) = raster_stats[j].sum();
-        else if (stats[i] == std::string("count")) stat_results(j, i) = raster_stats[j].count();
+      int i = 0;
+      for(const auto& stat : stats) {
+        if (stat == std::string("mean")) stat_results(j, i++) = rs.mean();
 
-        else if (stats[i] == std::string("min")) stat_results(j, i) = raster_stats[j].min().value_or(NA_REAL);
-        else if (stats[i] == std::string("max")) stat_results(j, i) = raster_stats[j].max().value_or(NA_REAL);
+        else if (stat == std::string("sum")) stat_results(j, i++) = rs.sum();
+        else if (stat == std::string("count")) stat_results(j, i++) = rs.count();
 
-        else if (stats[i] == std::string("mode")) stat_results(j, i) = raster_stats[j].mode().value_or(NA_REAL);
-        else if (stats[i] == std::string("majority")) stat_results(j, i) = raster_stats[j].mode().value_or(NA_REAL);
-        else if (stats[i] == std::string("minority")) stat_results(j, i) = raster_stats[j].minority().value_or(NA_REAL);
+        else if (stat == std::string("min")) stat_results(j, i++) = rs.min().value_or(NA_REAL);
+        else if (stat == std::string("max")) stat_results(j, i++) = rs.max().value_or(NA_REAL);
 
-        else if (stats[i] == std::string("variety")) stat_results(j, i) = raster_stats[j].variety();
-        else if (stats[i] == std::string("weighted_mean")) stat_results(j, i) = raster_stats[j].weighted_mean();
-        else if (stats[i] == std::string("weighted_sum")) stat_results(j, i) = raster_stats[j].weighted_sum();
+        else if (stat == std::string("median")) stat_results(j, i++) = rs.quantile(0.5).value_or(NA_REAL);
 
-        else if (stats[i] == std::string("variance")) stat_results(j, i) = raster_stats[j].variance();
-        else if (stats[i] == std::string("stdev")) stat_results(j, i) = raster_stats[j].stdev();
-        else if (stats[i] == std::string("coefficient_of_variation")) stat_results(j, i) = raster_stats[j].coefficient_of_variation();
+        else if (stat == std::string("mode")) stat_results(j, i++) = rs.mode().value_or(NA_REAL);
+        else if (stat == std::string("majority")) stat_results(j, i++) = rs.mode().value_or(NA_REAL);
+        else if (stat == std::string("minority")) stat_results(j, i++) = rs.minority().value_or(NA_REAL);
 
-        else Rcpp::stop("Unknown stat: " + stats[i]);
+        else if (stat == std::string("variety")) stat_results(j, i++) = rs.variety();
+        else if (stat == std::string("weighted_mean")) stat_results(j, i++) = rs.weighted_mean();
+        else if (stat == std::string("weighted_sum")) stat_results(j, i++) = rs.weighted_sum();
+
+        else if (stat == std::string("variance")) stat_results(j, i++) = rs.variance();
+        else if (stat == std::string("stdev")) stat_results(j, i++) = rs.stdev();
+        else if (stat == std::string("coefficient_of_variation")) stat_results(j, i++) = rs.coefficient_of_variation();
+
+        else if (stat == std::string("quantile")) {
+          Rcpp::NumericVector qvec = quantiles.get();
+          for (double q : qvec) {
+            stat_results(j, i++) = rs.quantile(q).value_or(NA_REAL);
+          }
+        }
+
+        else Rcpp::stop("Unknown stat: " + stat);
       }
     }
 
     return stat_results;
   } catch (std::exception & e) {
-    // throw predictible exception class
+    // throw predictable exception class
     Rcpp::stop(e.what());
   }
+}
+
+// [[Rcpp::export]]
+Rcpp::S4 CPP_resample(Rcpp::S4 & rast_in,
+                      Rcpp::S4 & rast_out,
+                      const Rcpp::StringVector & stat) {
+  Rcpp::Environment raster = Rcpp::Environment::namespace_env("raster");
+  Rcpp::Function rasterFn = raster["raster"];
+  Rcpp::Function valuesFn = raster["values<-"];
+
+  if (stat.size() != 1) {
+    Rcpp::stop("Only a single operation may be used for resampling.");
+  }
+
+  S4RasterSource rsrc(rast_in);
+
+  Rcpp::S4 out = rasterFn(rast_out);
+
+  auto grid_in = make_grid(rast_in);
+  auto grid_out = make_grid(rast_out);
+
+  std::string stat_name = Rcpp::as<std::string>(stat[0]);
+
+  Rcpp::NumericMatrix values_out = Rcpp::no_init(grid_out.rows(), grid_out.cols());
+
+  for (size_t row = 0; row < grid_out.rows(); row++) {
+    // Read enough source raster data to process an entire destination row at
+    // a time, since getValuesBlock calls have a lot of overhead.
+    auto y = grid_out.y_for_row(row);
+    auto ymin = y - grid_out.dy();
+    auto ymax = y + grid_out.dy();
+
+    Box row_box{ grid_out.xmin(), ymin, grid_out.xmax(), ymax };
+    auto values = rsrc.read_box(row_box, 0);
+
+    for (size_t col = 0; col < grid_out.cols(); col++) {
+      RasterStats<double> stats;
+
+      Box cell = grid_cell(grid_out, row, col);
+      auto coverage_fraction = raster_cell_intersection(grid_in, cell);
+
+      auto& cov_grid = coverage_fraction.grid();
+
+      if (!cov_grid.empty()) {
+        stats.process(coverage_fraction, *values);
+      }
+
+      values_out(row, col) = get_stat_value(stats, stat_name);
+    }
+  }
+
+  out = valuesFn(out, values_out);
+  return out;
 }
