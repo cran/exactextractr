@@ -1,14 +1,14 @@
-f0e4bc0c67542cab009893af8ed27598 *DESCRIPTION
+c72a29c73b7fb8a6a148b7dea57ab902 *DESCRIPTION
 11549ba32c6783e8d48885aaefba94e9 *NAMESPACE
-f1511e5a67d96ed174744e6e0c569b7f *NEWS.md
+eb20631de374b6a109cf6cecedaeb6ef *NEWS.md
 6a3505956b0881d0d8924fb025d459a8 *R/RcppExports.R
 3e1231fe7ea9ee3af6cec6a5164cd14b *R/coverage_fraction.R
-90ce5a5b126390f1dcfa294e1c410736 *R/exact_extract.R
+18ff90f04369419ae7da6f16115fc839 *R/exact_extract.R
 977fe7b4897b4e049fb6b967861b9732 *R/exact_resample.R
 35e11a3e884e84cb978c93141e0f6045 *R/package.R
 006348d6678d4d8df0b57d626a92c524 *README.md
 66e06ac2d2dfba498696933eb79ac2b6 *cleanup
-90d7bc54eb3395708366a76588796d8f *configure
+aff1e0a1b087001291376f22d89a6e49 *configure
 c9b0b5f49096631f707a13ff7843917b *configure.ac
 5d438fde4d3479614ae88ce9720aca13 *man/coverage_fraction.Rd
 6108d733b34d0a3ecb1d1b07612c125a *man/exact_extract.Rd
@@ -99,6 +99,6 @@ badab9ddff4328d716ad596903b8ed53 *src/exactextract/vend/optional.hpp
 08f0623c5f51e2f31a92678c555aac19 *tests/testthat.R
 15c6ed02bd229574a7f5a7ac5792aa21 *tests/testthat/helper_functions.R
 c20fcab06bd4724967bc46ef650de5fb *tests/testthat/test_coverage_fraction.R
-4087ada0480e469a8672680e6aecdea7 *tests/testthat/test_exact_extract.R
+b9e025bb36be7921dbc4b1c3a75e77e3 *tests/testthat/test_exact_extract.R
 7e204c8d722230ad99708f58eaac96ae *tests/testthat/test_exact_resample.R
 1d3815a55908c78e8a3604902b269965 *tools/winlibs.R
