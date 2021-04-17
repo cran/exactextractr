@@ -1,3 +1,14 @@
+# version 0.6.0
+
+- Support use of RasterStack weights in exact_extract named summary operations
+- Support use of weights in exact_extract R summary functions
+- Support SpatialPolygons and SpatialPolygonsDataFrame inputs
+- Support exact_resample with mode, minority, variety, median, quantiles
+- Add default_value and default_weight arguments to exact_extract
+- Add coverage_area argument to exact_extract
+- Add summarize_df argument to exact_extract
+- Accept weights='area' in exact_extract
+
 # version 0.5.1
 
 - Fix bug causing progress bar to jump to 100%

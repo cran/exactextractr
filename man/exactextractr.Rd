@@ -22,3 +22,4 @@ functions:
 \author{
 Daniel Baston
 }
+\keyword{internal}
