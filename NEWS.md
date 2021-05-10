@@ -1,3 +1,11 @@
+# version 0.6.1
+
+- Fix Solaris build
+- Avoid undefined behavior when extracting values for polygon entirely outside raster extent
+- Fix incorrect results for GeometryCollections with more than one component (previously
+  sf::st_cast was used to convert these to MultiPolygons, but st_cast only processes the
+  first component.)
+
 # version 0.6.0
 
 - Support use of RasterStack weights in exact_extract named summary operations

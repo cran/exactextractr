@@ -8,6 +8,7 @@
 \alias{exact_extract,Raster,sfc_MULTIPOLYGON-method}
 \alias{exact_extract,Raster,sfc_POLYGON-method}
 \alias{exact_extract,Raster,sfc_GEOMETRY-method}
+\alias{exact_extract,Raster,sfc_GEOMETRYCOLLECTION-method}
 \title{Extract or summarize values from Raster* objects}
 \usage{
 \S4method{exact_extract}{Raster,sf}(
@@ -84,6 +85,29 @@
 )
 
 \S4method{exact_extract}{Raster,sfc_GEOMETRY}(
+  x,
+  y,
+  fun = NULL,
+  ...,
+  weights = NULL,
+  append_cols = NULL,
+  coverage_area = FALSE,
+  default_value = NA_real_,
+  default_weight = NA_real_,
+  include_area = FALSE,
+  include_cell = FALSE,
+  include_cols = NULL,
+  include_xy = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  summarize_df = FALSE,
+  quantiles = NULL,
+  progress = TRUE,
+  max_cells_in_memory = 3e+07
+)
+
+\S4method{exact_extract}{Raster,sfc_GEOMETRYCOLLECTION}(
   x,
   y,
   fun = NULL,
