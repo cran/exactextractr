@@ -3,20 +3,24 @@
 \name{exact_resample}
 \alias{exact_resample}
 \alias{exact_resample,RasterLayer,RasterLayer-method}
+\alias{exact_resample,SpatRaster,SpatRaster-method}
 \title{Resample a raster to a new grid}
 \usage{
 \S4method{exact_resample}{RasterLayer,RasterLayer}(x, y, fun)
+
+\S4method{exact_resample}{SpatRaster,SpatRaster}(x, y, fun)
 }
 \arguments{
-\item{x}{a \code{RasterLayer} to be resampled}
+\item{x}{a \code{RasterLayer} or \code{SpatRaster} to be resampled}
 
-\item{y}{a \code{RasterLayer} with a grid definition to which \code{x}
-should be resampled}
+\item{y}{a raster of the same class as \code{x} with a grid definition to
+which \code{x} should be resampled}
 
 \item{fun}{a named summary operation to be used for the resampling}
 }
 \value{
-a resampled version of \code{x}
+a resampled version of \code{x}, returned as a \code{RasterLayer} or
+        \code{SpatRaster}, depending on the values of \code{x} and \code{y}
 }
 \description{
 Resample a raster to a new grid

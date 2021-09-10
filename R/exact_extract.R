@@ -11,20 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!isGeneric("exact_extract")) {
-	setGeneric("exact_extract", function(x, y, ...)
-		standardGeneric("exact_extract"))
-}
+setGeneric("exact_extract", function(x, y, ...)
+	standardGeneric("exact_extract"))
 
 #' Extract or summarize values from Raster* objects
 #'
-#' Extracts the values of cells in `Raster*` that are covered by polygons in a
+#' Extracts the values of cells in a raster that are covered by polygons in a
 #' simple feature collection (`sf` or `sfc`) or `SpatialPolygonsDataFrame`.
 #' Returns either a summary of the extracted values or the extracted values
 #' themselves.
 #'
 #' @details
-#' `exact_extract` extracts the values of cells in a `Raster*` that are covered
+#' `exact_extract` extracts the values of cells in a raster that are covered
 #' by polygons in a simple feature collection (`sf` or `sfc`) or
 #' `SpatialPolygonDataFrame`, as well as the fraction or area of each cell that
 #' is covered by the polygon. The function can either return these values
@@ -149,7 +147,7 @@ if (!isGeneric("exact_extract")) {
 #' data frame. For most applications, it is simpler to set `summarize_df = TRUE`
 #' and work with all inputs in a single data frame.
 #'
-#' @param     x a `RasterLayer`, `RasterStack`, or `RasterBrick`
+#' @param     x a `RasterLayer`, `RasterStack`, `RasterBrick`, or `SpatRaster`
 #' @param     y a `sf`, `sfc`, `SpatialPolygonsDataFrame`, or `SpatialPolygons`
 #'            object with polygonal geometries
 #' @param     fun an optional function or character vector, as described below
@@ -241,15 +239,6 @@ if (!isGeneric("exact_extract")) {
 #' @md
 NULL
 
-# Return the number of standard (non-...) arguments in a supplied function that
-# do not have a default value. This is used to fail if the summary function
-# provided by the user cannot accept arguments of values and weights.
-.num_expected_args <- function(fun) {
-  a <- formals(args(fun))
-  a <- a[names(a) != '...']
-  sum(sapply(a, nchar) == 0)
-}
-
 .exact_extract <- function(x, y, fun=NULL, ...,
                            weights=NULL,
                            append_cols=NULL,
@@ -309,7 +298,7 @@ NULL
   }
 
   if(!is.null(weights)) {
-    if (!inherits(weights, 'BasicRaster')) {
+    if (!(.isRaster(weights) || weights == 'area')) {
       stop("Weights must be a Raster object or \"area\".")
     }
 
@@ -425,10 +414,8 @@ NULL
   }
 
   tryCatch({
-    x <- raster::readStart(x)
-    if (inherits(weights, 'BasicRaster')) {
-      weights <- raster::readStart(weights)
-    }
+    x <- .startReading(x)
+    weights <- .startReading(weights)
 
     if (is.character(fun)) {
       # Compute all stats in C++.
@@ -471,10 +458,10 @@ NULL
         return(ret)
       }
     } else {
-      num_values <- raster::nlayers(x)
+      num_values <- .numLayers(x)
       value_names <- names(x)
-      if (inherits(weights, 'BasicRaster')) {
-        num_weights <- raster::nlayers(weights)
+      if (.isRaster(weights)) {
+        num_weights <- .numLayers(weights)
         weight_names <- names(weights)
       } else if (area_weights) {
         num_weights <- 1
@@ -619,9 +606,34 @@ NULL
         }
       })
 
+      # if we have columns to append, iterate over the results and
+      # append the columns to each, coercing into a data frame if
+      # necessary. We need to iterate over the results before binding
+      # them together because we don't know the legnth of each result
+      # or even if their lengths are constant.
+      if (!is.null(append_cols)) {
+        for (i in seq_along(ret)) {
+          if (!is.data.frame(ret[[i]])) {
+            ret[[i]] = data.frame(result = ret[[i]])
+          }
+
+          if (nrow(ret[[i]]) >= 1) {
+            append_row <- i
+          } else {
+            # cbinding row 0 cleanly brings in zero-length columns
+            # of the correct names and types, in the correct positions
+            append_row <- 0
+          }
+
+          ret[[i]] <- cbind(sf::st_drop_geometry(y[append_row, append_cols]),
+                            ret[[i]],
+                            row.names = NULL)
+        }
+      }
+
       if (!is.null(fun)) {
         if (all(sapply(ret, is.data.frame))) {
-        # function returned a data frame for each polygon? rbind them
+          # function returned a data frame for each polygon? rbind them
           if (requireNamespace('dplyr', quietly = TRUE)) {
             ret <- dplyr::bind_rows(ret) # handle column name mismatches
           } else {
@@ -638,17 +650,11 @@ NULL
         }
       }
 
-      if (!is.null(append_cols)) {
-        ret <- cbind(sf::st_drop_geometry(y[, append_cols]), ret)
-      }
-
       return(ret)
     }
   }, finally={
-    raster::readStop(x)
-    if (inherits(weights, 'BasicRaster')) {
-      raster::readStop(weights)
-    }
+    .stopReading(x)
+    .stopReading(weights)
   })
 }
 
@@ -714,3 +720,41 @@ setOldClass('sfc_GEOMETRYCOLLECTION')
 #' @export
 setMethod('exact_extract', signature(x='Raster', y='sfc_GEOMETRYCOLLECTION'), .exact_extract)
 
+#' @import sf
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='SpatRaster', y='sf'),
+          .exact_extract)
+
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='SpatRaster', y='SpatialPolygonsDataFrame'),
+          function(x, y, ...) .exact_extract(x, sf::st_as_sf(y), ...))
+
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='SpatRaster', y='SpatialPolygons'),
+          function(x, y, ...) .exact_extract(x, sf::st_as_sf(y), ...))
+
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='SpatRaster', y='sfc_MULTIPOLYGON'), .exact_extract)
+
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='SpatRaster', y='sfc_POLYGON'), .exact_extract)
+
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='SpatRaster', y='sfc_GEOMETRY'), .exact_extract)
+
+#' @useDynLib exactextractr
+#' @rdname exact_extract
+#' @export
+setMethod('exact_extract', signature(x='SpatRaster', y='sfc_GEOMETRYCOLLECTION'), .exact_extract)

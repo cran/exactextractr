@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 ISciences, LLC.
+// Copyright (c) 2018-2021 ISciences, LLC.
 // All rights reserved.
 //
 // This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -55,10 +55,6 @@ Rcpp::S4 CPP_resample(Rcpp::S4 & rast_in,
     Rcpp::Environment raster = Rcpp::Environment::namespace_env("raster");
     Rcpp::Function rasterFn = raster["raster"];
     Rcpp::Function valuesFn = raster["values<-"];
-
-    if (stat.size() != 1) {
-      Rcpp::stop("Only a single operation may be used for resampling.");
-    }
 
     S4RasterSource rsrc(rast_in);
 

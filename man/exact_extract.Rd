@@ -9,6 +9,13 @@
 \alias{exact_extract,Raster,sfc_POLYGON-method}
 \alias{exact_extract,Raster,sfc_GEOMETRY-method}
 \alias{exact_extract,Raster,sfc_GEOMETRYCOLLECTION-method}
+\alias{exact_extract,SpatRaster,sf-method}
+\alias{exact_extract,SpatRaster,SpatialPolygonsDataFrame-method}
+\alias{exact_extract,SpatRaster,SpatialPolygons-method}
+\alias{exact_extract,SpatRaster,sfc_MULTIPOLYGON-method}
+\alias{exact_extract,SpatRaster,sfc_POLYGON-method}
+\alias{exact_extract,SpatRaster,sfc_GEOMETRY-method}
+\alias{exact_extract,SpatRaster,sfc_GEOMETRYCOLLECTION-method}
 \title{Extract or summarize values from Raster* objects}
 \usage{
 \S4method{exact_extract}{Raster,sf}(
@@ -129,9 +136,128 @@
   progress = TRUE,
   max_cells_in_memory = 3e+07
 )
+
+\S4method{exact_extract}{SpatRaster,sf}(
+  x,
+  y,
+  fun = NULL,
+  ...,
+  weights = NULL,
+  append_cols = NULL,
+  coverage_area = FALSE,
+  default_value = NA_real_,
+  default_weight = NA_real_,
+  include_area = FALSE,
+  include_cell = FALSE,
+  include_cols = NULL,
+  include_xy = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  summarize_df = FALSE,
+  quantiles = NULL,
+  progress = TRUE,
+  max_cells_in_memory = 3e+07
+)
+
+\S4method{exact_extract}{SpatRaster,SpatialPolygonsDataFrame}(x, y, ...)
+
+\S4method{exact_extract}{SpatRaster,SpatialPolygons}(x, y, ...)
+
+\S4method{exact_extract}{SpatRaster,sfc_MULTIPOLYGON}(
+  x,
+  y,
+  fun = NULL,
+  ...,
+  weights = NULL,
+  append_cols = NULL,
+  coverage_area = FALSE,
+  default_value = NA_real_,
+  default_weight = NA_real_,
+  include_area = FALSE,
+  include_cell = FALSE,
+  include_cols = NULL,
+  include_xy = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  summarize_df = FALSE,
+  quantiles = NULL,
+  progress = TRUE,
+  max_cells_in_memory = 3e+07
+)
+
+\S4method{exact_extract}{SpatRaster,sfc_POLYGON}(
+  x,
+  y,
+  fun = NULL,
+  ...,
+  weights = NULL,
+  append_cols = NULL,
+  coverage_area = FALSE,
+  default_value = NA_real_,
+  default_weight = NA_real_,
+  include_area = FALSE,
+  include_cell = FALSE,
+  include_cols = NULL,
+  include_xy = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  summarize_df = FALSE,
+  quantiles = NULL,
+  progress = TRUE,
+  max_cells_in_memory = 3e+07
+)
+
+\S4method{exact_extract}{SpatRaster,sfc_GEOMETRY}(
+  x,
+  y,
+  fun = NULL,
+  ...,
+  weights = NULL,
+  append_cols = NULL,
+  coverage_area = FALSE,
+  default_value = NA_real_,
+  default_weight = NA_real_,
+  include_area = FALSE,
+  include_cell = FALSE,
+  include_cols = NULL,
+  include_xy = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  summarize_df = FALSE,
+  quantiles = NULL,
+  progress = TRUE,
+  max_cells_in_memory = 3e+07
+)
+
+\S4method{exact_extract}{SpatRaster,sfc_GEOMETRYCOLLECTION}(
+  x,
+  y,
+  fun = NULL,
+  ...,
+  weights = NULL,
+  append_cols = NULL,
+  coverage_area = FALSE,
+  default_value = NA_real_,
+  default_weight = NA_real_,
+  include_area = FALSE,
+  include_cell = FALSE,
+  include_cols = NULL,
+  include_xy = FALSE,
+  force_df = FALSE,
+  full_colnames = FALSE,
+  stack_apply = FALSE,
+  summarize_df = FALSE,
+  quantiles = NULL,
+  progress = TRUE,
+  max_cells_in_memory = 3e+07
+)
 }
 \arguments{
-\item{x}{a \code{RasterLayer}, \code{RasterStack}, or \code{RasterBrick}}
+\item{x}{a \code{RasterLayer}, \code{RasterStack}, \code{RasterBrick}, or \code{SpatRaster}}
 
 \item{y}{a \code{sf}, \code{sfc}, \code{SpatialPolygonsDataFrame}, or \code{SpatialPolygons}
 object with polygonal geometries}
@@ -221,13 +347,13 @@ a vector, data frame, or list of data frames, depending on the type
 of \code{x} and the value of \code{fun} (see Details)
 }
 \description{
-Extracts the values of cells in \verb{Raster*} that are covered by polygons in a
+Extracts the values of cells in a raster that are covered by polygons in a
 simple feature collection (\code{sf} or \code{sfc}) or \code{SpatialPolygonsDataFrame}.
 Returns either a summary of the extracted values or the extracted values
 themselves.
 }
 \details{
-\code{exact_extract} extracts the values of cells in a \verb{Raster*} that are covered
+\code{exact_extract} extracts the values of cells in a raster that are covered
 by polygons in a simple feature collection (\code{sf} or \code{sfc}) or
 \code{SpatialPolygonDataFrame}, as well as the fraction or area of each cell that
 is covered by the polygon. The function can either return these values
