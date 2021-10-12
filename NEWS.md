@@ -1,3 +1,8 @@
+# verison 0.7.1
+
+- Fix include_xy and include_cell arguments for terra inputs
+- Support version 3.5 of raster package
+
 # version 0.7.0
 
 - Support terra SpatRaster inputs
