@@ -415,7 +415,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>Here we use the <code>include_cols</code> argument here to include the <code>name</code> column from <code>concelhos</code> in the data frame passed to the summary function. (Although the value of <code>name</code> will be the same for all rows in <code>df</code>, we include <code>name</code> in the <code>group_by</code> expression so that it is not removed by <code>summarize</code>.) Other similar arguments include <code>include_xy</code> to get the cell center coordinates, <code>include_area</code> to get the cell area, and <code>include_cell</code> to get the cell index used by the <code>raster</code> package.</p>
 <p>This provides us with a correspondence between each numeric land cover category and its frequency in each <em>concelho</em>:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">head</span>(landcov_fracs)</a>
-<a class="sourceLine" id="cb7-2" title="2"><span class="co">#&gt; # A tibble: 6 x 3</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="co">#&gt; # A tibble: 6 × 3</span></a>
 <a class="sourceLine" id="cb7-3" title="3"><span class="co">#&gt; # Groups:   name [1]</span></a>
 <a class="sourceLine" id="cb7-4" title="4"><span class="co">#&gt;   name  value    freq</span></a>
 <a class="sourceLine" id="cb7-5" title="5"><span class="co">#&gt;   &lt;chr&gt; &lt;dbl&gt;   &lt;dbl&gt;</span></a>
