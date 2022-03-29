@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2021 ISciences, LLC.
+# Copyright (c) 2018-2022 ISciences, LLC.
 # All rights reserved.
 #
 # This software is licensed under the Apache License, Version 2.0 (the "License").
@@ -131,6 +131,15 @@
 .validateNumericScalarOrNA <- function(value, name) {
   if (!(is.numeric(value) && length(value) == 1)) {
     stop(name, ' must be a single numeric value')
+  }
+}
+
+.validateUniqueNames <- function(x) {
+  nm <- names(x)
+  if (!is.null(nm)) {
+    if (length(nm) != length(unique(nm))) {
+      stop('names of input rasters must be unique')
+    }
   }
 }
 
@@ -304,4 +313,147 @@
   } else {
     stop('Unknown type: ', class(r))
   }
+}
+
+.createProgress <- function(progress, n) {
+  if (progress && n > 1) {
+    pb <- utils::txtProgressBar(min = 0, max = n, initial=0, style=3)
+    update_progress <- function() {
+      i <- 1 + utils::getTxtProgressBar(pb)
+      utils::setTxtProgressBar(pb, i)
+      if (i == n) {
+        close(pb)
+      }
+    }
+  } else {
+    update_progress <- function() {}
+  }
+
+  return(update_progress)
+}
+
+.isInMemory <- function(r) {
+  if (inherits(r, 'BasicRaster')) {
+    return(raster::inMemory(r))
+  } else if (inherits(r, 'SpatRaster')) {
+    return(terra::inMemory(r[[1]]))
+  } else {
+    stop('Unknown type: ', class(r))
+  }
+}
+
+.netCDFBlockSize <- function(fname, varname) {
+  nc <- NULL
+  sz <- NA
+
+  tryCatch({
+    nc <- ncdf4::nc_open(fname)
+    sz <- nc$var[[varname]]$chunksizes
+
+    dim_index <- nc$var[[varname]]$dimids + 1L
+    dim_names <- sapply(dim_index, function(i) nc$dim[[i]]$name)
+
+    if (all(is.na(sz))) {
+      # file is not compressed
+      sz <- rep.int(1, length(dim_names))
+    }
+
+    names(sz) <- dim_names
+  }, finally = {
+    if (!is.null(nc)) {
+      ncdf4::nc_close(nc)
+    }
+  })
+
+  # flip dimensions 1 and 2 so we return row/col
+  return(sz[c(2, 1, seq_along(sz)[-(1:2)])])
+}
+
+.blockSize <- function(r) {
+  # set default return value in case file is uncompressed and has
+  # has no block size, or we simply can't figure it out
+  ret <- c(1, 1)
+
+  if (inherits(r, 'BasicRaster')) {
+    if (r[[1]]@file@driver == 'netcdf') {
+      ret <- .netCDFBlockSize(r[[1]]@file@name, attr(r[[1]]@data, 'zvar'))
+    } else if (r@file@driver == 'gdal') {
+      ret <- c(r@file@blockrows, r@file@blockcols)
+    }
+  } else if (inherits(r, 'SpatRaster')) {
+    ret <- terra::fileBlocksize(r)[1, ]
+  }
+
+  unname(ret)
+}
+
+.eagerLoad <- function(r, geoms, max_cells_in_memory, message_on_fail) {
+  if (is.null(r)) {
+    return(NULL)
+  }
+
+  cells_required <- .numCells(r, geoms)
+
+  if (cells_required <= max_cells_in_memory) {
+    box <- sf::st_bbox(geoms)
+    geom_ext <- terra::ext(box[c('xmin', 'xmax', 'ymin', 'ymax')])
+
+    if (!inherits(r, 'SpatRaster')) {
+      # current CRAN version of terra (1.4-22) does not preserve
+      # names on conversion (https://github.com/rspatial/terra/issues/430)
+      nm <- names(r)
+      r <- terra::rast(r)
+      names(r) <- nm
+    }
+
+    overlap_ext <- terra::intersect(terra::ext(r), geom_ext)
+    if (is.null(overlap_ext)) {
+      # Extents do not overlap, and terra::crop will throw an error
+      # if we try to crop. Return the input raster as-is; nothing will be
+      # read from it anyway.
+      return(r)
+    }
+
+    r <- terra::crop(r, geom_ext, snap = 'out')
+  } else if (message_on_fail) {
+    message('Cannot preload entire working area of ', cells_required,
+            ' cells with max_cells_in_memory = ', max_cells_in_memory, '.',
+            ' Raster values will be read for each feature individually.')
+  }
+
+  return(r)
+}
+
+.numCells <- function(r, g) {
+  if (is.null(r)) {
+    return(0)
+  }
+
+  box <- sf::st_bbox(g)
+
+  top <- .rowFromY(r, box['ymax'])
+  bottom <- .rowFromY(r, box['ymin'])
+  left <- .colFromX(r, box['xmin'])
+  right <- .colFromX(r, box['xmax'])
+
+  if (is.na(top) && is.na(bottom)) {
+    return(0L)
+  }
+  if (is.na(left) && is.na(right)) {
+    return(0L)
+  }
+  if (is.na(top)) {
+    top <- 1
+  }
+  if (is.na(bottom)) {
+    bottom <- nrow(r)
+  }
+  if (is.na(left)) {
+    left <- 1
+  }
+  if (is.na(right)) {
+    right <- ncol(r)
+  }
+
+  return( (bottom - top + 1) * (right - left + 1) * .numLayers(r) )
 }

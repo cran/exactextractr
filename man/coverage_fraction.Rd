@@ -5,6 +5,9 @@
 \alias{coverage_fraction,RasterLayer,sf-method}
 \alias{coverage_fraction,RasterLayer,sfc_MULTIPOLYGON-method}
 \alias{coverage_fraction,RasterLayer,sfc_POLYGON-method}
+\alias{coverage_fraction,SpatRaster,sf-method}
+\alias{coverage_fraction,SpatRaster,sfc_MULTIPOLYGON-method}
+\alias{coverage_fraction,SpatRaster,sfc_POLYGON-method}
 \title{Compute the fraction of raster cells covered by a polygon}
 \usage{
 \S4method{coverage_fraction}{RasterLayer,sf}(x, y, crop = FALSE)
@@ -12,6 +15,12 @@
 \S4method{coverage_fraction}{RasterLayer,sfc_MULTIPOLYGON}(x, y, crop)
 
 \S4method{coverage_fraction}{RasterLayer,sfc_POLYGON}(x, y, crop)
+
+\S4method{coverage_fraction}{SpatRaster,sf}(x, y, crop = FALSE)
+
+\S4method{coverage_fraction}{SpatRaster,sfc_MULTIPOLYGON}(x, y, crop)
+
+\S4method{coverage_fraction}{SpatRaster,sfc_POLYGON}(x, y, crop)
 }
 \arguments{
 \item{x}{a (possibly empty) \code{RasterLayer} whose resolution and

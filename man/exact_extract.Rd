@@ -38,7 +38,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{Raster,SpatialPolygonsDataFrame}(x, y, ...)
@@ -65,7 +66,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{Raster,sfc_POLYGON}(
@@ -88,7 +90,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{Raster,sfc_GEOMETRY}(
@@ -111,7 +114,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{Raster,sfc_GEOMETRYCOLLECTION}(
@@ -134,7 +138,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{SpatRaster,sf}(
@@ -157,7 +162,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{SpatRaster,SpatialPolygonsDataFrame}(x, y, ...)
@@ -184,7 +190,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{SpatRaster,sfc_POLYGON}(
@@ -207,7 +214,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{SpatRaster,sfc_GEOMETRY}(
@@ -230,7 +238,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 
 \S4method{exact_extract}{SpatRaster,sfc_GEOMETRYCOLLECTION}(
@@ -253,7 +262,8 @@
   summarize_df = FALSE,
   quantiles = NULL,
   progress = TRUE,
-  max_cells_in_memory = 3e+07
+  max_cells_in_memory = 3e+07,
+  grid_compat_tol = 0.001
 )
 }
 \arguments{
@@ -341,6 +351,10 @@ a given time when using a named summary operation
 for \code{fun} (as opposed to a function defined using
 R code). If a polygon covers more than \code{max_cells_in_memory}
 raster cells, it will be processed in multiple chunks.}
+
+\item{grid_compat_tol}{require value and weight grids to align within
+\code{grid_compat_tol} times the smaller of the two
+grid resolutions.}
 }
 \value{
 a vector, data frame, or list of data frames, depending on the type

@@ -6,9 +6,9 @@
 \alias{exact_resample,SpatRaster,SpatRaster-method}
 \title{Resample a raster to a new grid}
 \usage{
-\S4method{exact_resample}{RasterLayer,RasterLayer}(x, y, fun)
+\S4method{exact_resample}{RasterLayer,RasterLayer}(x, y, fun, coverage_area = FALSE)
 
-\S4method{exact_resample}{SpatRaster,SpatRaster}(x, y, fun)
+\S4method{exact_resample}{SpatRaster,SpatRaster}(x, y, fun, coverage_area = FALSE)
 }
 \arguments{
 \item{x}{a \code{RasterLayer} or \code{SpatRaster} to be resampled}
@@ -16,7 +16,10 @@
 \item{y}{a raster of the same class as \code{x} with a grid definition to
 which \code{x} should be resampled}
 
-\item{fun}{a named summary operation to be used for the resampling}
+\item{fun}{a named summary operation or R function to be used for the resampling}
+
+\item{coverage_area}{use cell coverage areas instead of coverage fractions
+in \code{fun}}
 }
 \value{
 a resampled version of \code{x}, returned as a \code{RasterLayer} or
