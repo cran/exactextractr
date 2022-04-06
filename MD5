@@ -1,6 +1,6 @@
-dce83f2f18c9f4c21a70b281f7d6860f *DESCRIPTION
+d96c6da84f634f8877b4500ca3855910 *DESCRIPTION
 11549ba32c6783e8d48885aaefba94e9 *NAMESPACE
-40630114678fffd850c658b66db5edb8 *NEWS.md
+2c1987241a31fb3a03f94385a4d0a083 *NEWS.md
 5d51d192b97fa2302d853cbc396fa87e *R/RcppExports.R
 cd28dc4fdcff8eec0a89701a4a5d7960 *R/coverage_fraction.R
 25daf8d4acab55fb6108828098dc0521 *R/exact_extract.R
@@ -10,7 +10,7 @@ a851e29ae0923849d5aa19def87f2626 *R/package.R
 7cf27296930c741b48218e9ae051a081 *README.md
 86317135df394f6609e00ac70b9c9ee7 *build/vignette.rds
 66e06ac2d2dfba498696933eb79ac2b6 *cleanup
-5b73d9ea0f509fd96aa3662c917d7991 *configure
+686a80bf15167976e3e3904e77d84819 *configure
 c0fc5e6fed092459c06a0e22dedaa03f *configure.ac
 dc7924bb17306eee7dd0a8001d8250a8 *inst/doc/vig1_population.R
 06fabb4dc92ba9a6f7a1088eb6e33ad0 *inst/doc/vig1_population.Rmd
@@ -79,7 +79,7 @@ e9ff4e6830967a6787611133f71f69ef *src/exactextract/src/perimeter_distance.cpp
 c4a35a666eb6b183017c7f09473bbf63 *src/exactextract/src/perimeter_distance.h
 5a75f6bd4a3a7257cd1da3f076fcec0d *src/exactextract/src/processor.cpp
 c00f36ae90be0e9db1dbf04ac2015c36 *src/exactextract/src/processor.h
-55ae1f085bd673f5216ff0ddb458360d *src/exactextract/src/raster.h
+31a054f9891d19f7fa118601e618ad60 *src/exactextract/src/raster.h
 afb86890c3e20df53541575177058ca7 *src/exactextract/src/raster_area.h
 d5f9097990c8f902bd984731a120e1d4 *src/exactextract/src/raster_cell_intersection.cpp
 94d0fbff4a3b00a832fb861a0b5e1bc9 *src/exactextract/src/raster_cell_intersection.h
@@ -110,7 +110,7 @@ f369772e26dfc293462c58cab798a870 *src/exactextract/test/test_cell.cpp
 782c1d4f7f7d28a35811aaab4527789d *src/exactextract/test/test_grid.cpp
 0a8ee344dc5530d9c0ff8a634a45f031 *src/exactextract/test/test_main.cpp
 29609ba9cd248edd35b71af44565d0da *src/exactextract/test/test_perimeter_distance.cpp
-07e0e40ca399c727cb6f7dc8a1ef46b1 *src/exactextract/test/test_raster.cpp
+1469cba751874270023f5b8ef344c53a *src/exactextract/test/test_raster.cpp
 bb273509b190667e57db31db052910a5 *src/exactextract/test/test_raster_area.cpp
 e65dc6d35b468c23581803093c6451de *src/exactextract/test/test_raster_cell_intersection.cpp
 d3b9a629d02c02e28863b6b03b8f9192 *src/exactextract/test/test_raster_iterator.cpp
