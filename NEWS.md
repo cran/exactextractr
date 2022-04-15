@@ -1,3 +1,8 @@
+# version 0.8.2
+
+- Fix incorrect read of raster values for value/weighting raster resolutions
+  enabled in version 0.8.1
+
 # version 0.8.1
 
 - Fix incorrect grid compatibility error with certain value and weighting 
