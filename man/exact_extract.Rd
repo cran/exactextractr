@@ -39,7 +39,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{Raster,SpatialPolygonsDataFrame}(x, y, ...)
@@ -67,7 +68,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{Raster,sfc_POLYGON}(
@@ -91,7 +93,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{Raster,sfc_GEOMETRY}(
@@ -115,7 +118,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{Raster,sfc_GEOMETRYCOLLECTION}(
@@ -139,7 +143,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{SpatRaster,sf}(
@@ -163,7 +168,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{SpatRaster,SpatialPolygonsDataFrame}(x, y, ...)
@@ -191,7 +197,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{SpatRaster,sfc_POLYGON}(
@@ -215,7 +222,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{SpatRaster,sfc_GEOMETRY}(
@@ -239,7 +247,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 
 \S4method{exact_extract}{SpatRaster,sfc_GEOMETRYCOLLECTION}(
@@ -263,7 +272,8 @@
   quantiles = NULL,
   progress = TRUE,
   max_cells_in_memory = 3e+07,
-  grid_compat_tol = 0.001
+  grid_compat_tol = 0.001,
+  colname_fun = NULL
 )
 }
 \arguments{
@@ -355,6 +365,14 @@ raster cells, it will be processed in multiple chunks.}
 \item{grid_compat_tol}{require value and weight grids to align within
 \code{grid_compat_tol} times the smaller of the two
 grid resolutions.}
+
+\item{colname_fun}{an optional function used to construct column names.
+Should accept arguments \code{values} (name of value layer),
+\code{weights} (name of weight layer), \code{fun_name} (value of
+\code{fun}), \code{fun_value} (value associated with \code{fun}, for
+\verb{fun \%in\% c('quantile', 'frac', 'weighted_frac)}
+\code{nvalues} (number of value layers), \code{weights}
+(number of weight layers)}
 }
 \value{
 a vector, data frame, or list of data frames, depending on the type
@@ -465,6 +483,12 @@ as \code{weights}
 the fraction of each cell that is covered by the polygon
 and the value of a second weighting raster provided
 as \code{weights}
+\item \code{frac} - returns one column for each possible value of \code{x}, with the
+the fraction of defined raster cells that are equal to that
+value.
+\item \code{weighted_frac} - returns one column for each possible value of \code{x},
+with the fraction of defined cells that are equal
+to that value, weighted by \code{weights.}
 }
 
 In all of the summary operations, \code{NA} values in the the primary raster (\code{x})
