@@ -1,11 +1,10 @@
 Package: exactextractr
 Title: Fast Extraction from Raster Datasets using Polygons
-Version: 0.9.1
+Version: 0.10.0
 Authors@R: c(
         person("Daniel Baston", email = "dbaston@isciences.com", role = c("aut", "cre")),
         person("ISciences, LLC", role="cph"))
-Description: Provides a replacement for the 'extract' function from the 'raster' package
-    that is suitable for extracting raster values using 'sf' polygons.
+Description: Quickly and accurately summarizes raster values over polygonal areas ("zonal statistics").
 Depends: R (>= 3.4.0)
 License: Apache License (== 2.0)
 SystemRequirements: GEOS (>= 3.5.0)
@@ -14,15 +13,15 @@ URL: https://isciences.gitlab.io/exactextractr/,
         https://github.com/isciences/exactextractr
 BugReports: https://github.com/isciences/exactextractr/issues
 LinkingTo: Rcpp
-Suggests: dplyr, foreign, knitr, ncdf4, rgdal, rmarkdown, testthat,
-        terra (>= 1.5.17)
+Suggests: dplyr, foreign, knitr, ncdf4, rmarkdown, testthat, terra (>=
+        1.5.17)
 Encoding: UTF-8
 RoxygenNote: 7.1.2
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2022-11-16 15:02:20 UTC; dan
+Packaged: 2023-09-12 15:54:24 UTC; dan
 Author: Daniel Baston [aut, cre],
   ISciences, LLC [cph]
 Maintainer: Daniel Baston <dbaston@isciences.com>
 Repository: CRAN
-Date/Publication: 2022-11-16 22:50:07 UTC
+Date/Publication: 2023-09-20 08:20:02 UTC

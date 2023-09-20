@@ -483,6 +483,14 @@ as \code{weights}
 the fraction of each cell that is covered by the polygon
 and the value of a second weighting raster provided
 as \code{weights}
+\item \code{weighted_stdev} - the population standard deviation of cell values,
+weighted by the product of the fraction of each cell
+covered by the polygon and the value of a second
+weighting raster provided as \code{weights}
+\item \code{weighted_variance} - the population variance of cell values, weighted by
+the product of the fraction of each cell covered by
+the polygon and the value of a second weighting
+raster provided as \code{weights}
 \item \code{frac} - returns one column for each possible value of \code{x}, with the
 the fraction of defined raster cells that are equal to that
 value.

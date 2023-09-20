@@ -3,8 +3,8 @@
 [![Build Status](https://gitlab.com/isciences/exactextractr/badges/master/pipeline.svg)](https://gitlab.com/isciences/exactextractr/-/pipelines)
 [![coverage report](https://gitlab.com/isciences/exactextractr/badges/master/coverage.svg)](https://isciences.gitlab.io/exactextractr/coverage.html)
 [![CRAN](http://www.r-pkg.org/badges/version/exactextractr)](https://cran.r-project.org/package=exactextractr)
-[![cran checks](https://cranchecks.info/badges/worst/exactextractr)](https://cran.r-project.org/web/checks/check_results_exactextractr.html)
-
+[![cran checks](https://badges.cranchecks.info/worst/exactextractr.svg)](https://cran.r-project.org/web/checks/check_results_exactextractr.html)
+ 
 `exactextractr` is an R package that quickly and accurately summarizes raster
 values over polygonal areas, commonly referred to as _zonal statistics_. Unlike
 most zonal statistics implementations, it handles grid cells that are partially
@@ -81,8 +81,10 @@ provided in the `weights` argument to
 
 | Name                   | Description    |                     
 | ---------------------- |--------------- |
-| `weighted_mean`        | Mean defined value of cells that intersect the polygon, weighted by the product of the coverage fraction and the value of a second weighting raster. |
-| `weighted_sum`         | Sum of defined values of raster cells that intersect the polygon, multiplied by the coverage fraction and the value of a second weighting raster. |
+| `weighted_mean`        | Mean value of defined (non-`NA`) cells that intersect the polygon, weighted by the product of the coverage fraction and the value of a second weighting raster. |
+| `weighted_sum`         | Sum of defined (non-`NA`) values of raster cells that intersect the polygon, multiplied by the coverage fraction and the value of a second weighting raster. |
+| `weighted_variance`    | Population variance of defined (non-`NA`) values of cells that intersect the polygon, weighted by the product of the coverage fraction and the value of a second weighting raster. |
+| `weighted_stdev`       | Population standard deviation of defined (non-`NA`) values of raster cells that intersect the polygon, multiplied by the coverage fraction and the value of a second weighting raster. |
 | `weighted_frac`        | Fraction of covered cells that are occupied by each distinct raster value, with coverage fractions multiplied by the value of a second weighting raster. |
 
 Weighted usage is discussed in more detail [below](#weighted-usage).
