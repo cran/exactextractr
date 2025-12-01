@@ -26,8 +26,8 @@ par(mar = c(1, 1, 1, 1))
 
 This vignette describes the use of `exactextractr` to summarize population 
 and elevation data from the
-[Gridded Population of the World](https://sedac.ciesin.columbia.edu/data/collection/gpw-v4)
-and [EU-DEM](https://www.eea.europa.eu/data-and-maps/data/copernicus-land-monitoring-service-eu-dem)
+[Gridded Population of the World](https://www.earthdata.nasa.gov/data/projects/gpw)
+and [EU-DEM](https://www.eea.europa.eu/en/datahub/dataset-redirect/DAT-193-en)
 datasets. 
 The `exactextractr` package includes samples of both of these datasets,
 cropped to the extent of São Miguel, the largest and most populous island of the
@@ -236,7 +236,7 @@ pixel areas as:
 $$
 \bar{x}_\mathrm{pop} = \frac{ \Sigma_{i=0}^n {x_ic_id_ia_i}}{\Sigma_{i=0}^n{c_id_ia_i}}
 $$
-where $x_i$ is the population of pixel $i$, $c_i$ is the fraction of pixel $i$ 
+where $x_i$ is the elevation of pixel $i$, $c_i$ is the fraction of pixel $i$ 
 that is covered by a polygon, $d_i$ is the population density of pixel $i$, and
 $a_i$ is the area of pixel $i$.
 

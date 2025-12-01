@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -8,7 +8,7 @@ knitr::opts_knit$set(
   global.par = TRUE
 )
 
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 par(mar = c(1, 1, 1, 1))
 
 ## ----setup, message = FALSE---------------------------------------------------
@@ -29,7 +29,7 @@ plot(st_geometry(concelhos), add = TRUE)
 ## ----total-pop-cellstats------------------------------------------------------
 cellStats(pop_count, 'sum')
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 sao_miguel_pop <- cellStats(pop_count, 'sum')
 
 ## ----extract-example----------------------------------------------------------
@@ -42,7 +42,7 @@ concelho_pop <- exact_extract(pop_count, concelhos, 'sum',
   arrange(desc(pop)) %>%
   bind_rows(summarize(., name = 'Total', pop = sum(pop)))
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 concelho_pop %>%
   mutate(pop = prettyNum(round(pop), big.mark = ',')) %>%
   knitr::kable()
@@ -72,7 +72,7 @@ concelho_pop2 <- exact_extract(pop_density, concelhos,
                                append_cols = 'name',
                                progress = FALSE)
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 concelho_pop2 %>%
   rename(pop = result) %>%
   arrange(desc(pop)) %>%
@@ -113,7 +113,7 @@ concelho_mean_elev <- exact_extract(elev, concelhos, c('mean', 'weighted_mean'),
                                     coverage_area = TRUE, 
                                     append_cols = 'name', progress = FALSE)
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 concelho_mean_elev %>%
   rename(mean_elev = mean,
          pop_weighted_mean_elev = weighted_mean) %>%

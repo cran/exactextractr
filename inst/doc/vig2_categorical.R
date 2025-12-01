@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -8,7 +8,7 @@ knitr::opts_knit$set(
   global.par = TRUE
 )
 
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 par(mar = c(1, 1, 1, 1))
 
 ## ----setup, message = FALSE---------------------------------------------------
@@ -24,7 +24,7 @@ concelhos <- st_read(system.file('sao_miguel/concelhos.gpkg',
                                  package = 'exactextractr'),
                      quiet = TRUE)
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 corine_palette <- c(
   "#e6004d", "#ff0000", "#cc4df2", "#cc0000", "#e6cccc", "#e6cce6", "#a600cc",
   "#a64d00", "#ff4dff", "#ffa6ff", "#ffe6ff", "#ffffa8", "#ffff00", "#e6e600",

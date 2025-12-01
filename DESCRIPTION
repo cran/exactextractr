@@ -1,8 +1,8 @@
 Package: exactextractr
 Title: Fast Extraction from Raster Datasets using Polygons
-Version: 0.10.0
+Version: 0.10.1
 Authors@R: c(
-        person("Daniel Baston", email = "dbaston@isciences.com", role = c("aut", "cre")),
+        person("Daniel", "Baston", email = "dbaston@isciences.com", role = c("aut", "cre")),
         person("ISciences, LLC", role="cph"))
 Description: Quickly and accurately summarizes raster values over polygonal areas ("zonal statistics").
 Depends: R (>= 3.4.0)
@@ -16,12 +16,12 @@ LinkingTo: Rcpp
 Suggests: dplyr, foreign, knitr, ncdf4, rmarkdown, testthat, terra (>=
         1.5.17)
 Encoding: UTF-8
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2023-09-12 15:54:24 UTC; dan
+Packaged: 2025-12-01 15:52:14 UTC; dan
 Author: Daniel Baston [aut, cre],
   ISciences, LLC [cph]
 Maintainer: Daniel Baston <dbaston@isciences.com>
 Repository: CRAN
-Date/Publication: 2023-09-20 08:20:02 UTC
+Date/Publication: 2025-12-01 16:50:18 UTC
